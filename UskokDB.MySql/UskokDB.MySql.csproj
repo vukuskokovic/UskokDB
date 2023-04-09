@@ -10,6 +10,8 @@
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Company>Vuk Uskokovic</Company>
+    <Authors>Vuk Uskokovic</Authors>
   </PropertyGroup>
 
   <ItemGroup>
