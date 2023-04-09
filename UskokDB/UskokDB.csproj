@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+	<TargetFramework>net7.0</TargetFramework>
+	<Nullable>enable</Nullable>
+	  <LangVersion>preview</LangVersion>
+	  <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+	  <Title>A simple C# ORM</Title>
+	  <Company>Vuk Uskokovic</Company>
+	  <Copyright>MIT</Copyright>
+  </PropertyGroup>
+
+</Project>
