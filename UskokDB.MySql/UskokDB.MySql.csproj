@@ -2,6 +2,14 @@
 
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
+    <Title>Mysql extension for UskokDB</Title>
+    <Description>Creates wrapper for some stuff like instering creating tables etc..
+</Description>
+    <PackageProjectUrl>https://github.com/vukuskokovic/UskokDB</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/vukuskokovic/UskokDB</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>

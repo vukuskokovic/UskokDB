@@ -8,6 +8,10 @@
 	  <Title>A simple C# ORM</Title>
 	  <Company>Vuk Uskokovic</Company>
 	  <Copyright>MIT</Copyright>
+	  <RepositoryUrl>https://github.com/vukuskokovic/UskokDB</RepositoryUrl>
+	  <RepositoryType>git</RepositoryType>
+	  <PackageTags>db, database, orm, mysql</PackageTags>
+	  <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
 </Project>
