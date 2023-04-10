@@ -155,37 +155,54 @@ namespace UskokDB.MySql
             return builder.ToString();
         }
 
-        private StringBuilder InstertInit()
+        private StringBuilder InstertInit(string command)
         {
             StringBuilder builder = new();
-            builder.Append("INSERT INTO `");
+            builder.Append(command);
+            builder.Append(" INTO `");
             builder.Append(TableName);
             builder.Append("` VALUES ");
             return builder;
         }
 
-        public string GetInstertString(T value)
+
+
+        public string GetInstertString(T value, string command)
         {
-            var builder = InstertInit();
+            var builder = InstertInit(command);
             builder.Append(GetInstertInstance(value));
             return builder.ToString();
         }
 
-        public string GetInstertString(IEnumerable<T> values)
+        public string GetInstertString(IEnumerable<T> values, string command)
         {
-            var builder = InstertInit();
+            var builder = InstertInit(command);
             IEnumerable<string> instertArray = values.Select(GetInstertInstance);
             builder.Append(string.Join(',', instertArray));
             return builder.ToString();
         }
+        private const string INSERT = "INSERT";
+        private const string REPLACE = "REPLACE";
+        //Inseriting
+        public Task<int> InsertAsync(DbConnection connection, T value) => connection.ExecuteAsync(GetInstertString(value, INSERT));
+        public int Insert(IDbConnection connection, T value) => connection.Execute(GetInstertString(value, INSERT));
 
-        public Task<int> InsertAsync(DbConnection connection, T value) => connection.ExecuteAsync(GetInstertString(value));
-        public int Insert(IDbConnection connection, T value) => connection.Execute(GetInstertString(value));
+        public Task<int> InstertAsync(DbConnection connection, IEnumerable<T> values) => connection.ExecuteAsync(GetInstertString(values, INSERT));
+        public int Instert(IDbConnection connection, IEnumerable<T> values) => connection.Execute(GetInstertString(values, INSERT));
 
-        public Task<int> InstertAsync(DbConnection connection, IEnumerable<T> values) => connection.ExecuteAsync(GetInstertString(values));
-        public int Instert(IDbConnection connection, IEnumerable<T> values) => connection.Execute(GetInstertString(values));
+        public Task<int> InstertAsync(DbConnection connection, params T[] values) => connection.ExecuteAsync(GetInstertString(values, INSERT));
+        public int Instert(IDbConnection connection, params T[] values) => connection.Execute(GetInstertString(values, INSERT));
 
-        public Task<int> InstertAsync(DbConnection connection, params T[] values) => connection.ExecuteAsync(GetInstertString(values));
-        public int Instert(IDbConnection connection, params T[] values) => connection.Execute(GetInstertString(values));
+
+        //Replacing
+
+        public Task<int> ReplaceAsync(DbConnection connection, T value) => connection.ExecuteAsync(GetInstertString(value, REPLACE));
+        public int Replace(IDbConnection connection, T value) => connection.Execute(GetInstertString(value, REPLACE));
+
+        public Task<int> ReplaceAsync(DbConnection connection, IEnumerable<T> values) => connection.ExecuteAsync(GetInstertString(values, REPLACE));
+        public int Replace(IDbConnection connection, IEnumerable<T> values) => connection.Execute(GetInstertString(values, REPLACE));
+
+        public Task<int> ReplaceAsync(DbConnection connection, params T[] values) => connection.ExecuteAsync(GetInstertString(values, REPLACE));
+        public int Replace(IDbConnection connection, params T[] values) => connection.Execute(GetInstertString(values, REPLACE));
     }
 }

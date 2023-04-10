@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
     <Title>Mysql extension for UskokDB</Title>
-    <Description>Creates wrapper for some stuff like instering creating tables etc..
+    <Description>MySql helper for UskokDB
 </Description>
     <PackageProjectUrl>https://github.com/vukuskokovic/UskokDB</PackageProjectUrl>
     <RepositoryUrl>https://github.com/vukuskokovic/UskokDB</RepositoryUrl>
@@ -12,10 +12,20 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Company>Vuk Uskokovic</Company>
     <Authors>Vuk Uskokovic</Authors>
+    <Version>1.1.0</Version>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageReleaseNotes>Added documentation</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\UskokDB\UskokDB.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
   </ItemGroup>
 
 </Project>
