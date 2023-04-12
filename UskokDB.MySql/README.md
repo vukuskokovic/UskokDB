@@ -18,7 +18,7 @@ The resulting mysql string is
 Create Table IF NOT EXISTS `tablename` (Name Text, LastName Text)
 ```
 
-## Example
+## Example 2
 ```cs
 class Person 
 {

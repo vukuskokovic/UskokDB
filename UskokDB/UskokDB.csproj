@@ -1,28 +1,33 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
-  <PropertyGroup>
-	<TargetFramework>net7.0</TargetFramework>
-	<Nullable>enable</Nullable>
-	  <LangVersion>preview</LangVersion>
-	  <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-	  <Title>A simple C# ORM</Title>
-	  <Company>Vuk Uskokovic</Company>
-	  <Copyright>MIT</Copyright>
-	  <RepositoryUrl>https://github.com/vukuskokovic/UskokDB</RepositoryUrl>
-	  <RepositoryType>git</RepositoryType>
-	  <PackageTags>db, database, orm, mysql</PackageTags>
-	  <PackageLicenseExpression>MIT</PackageLicenseExpression>
-	  <Authors>Vuk Uskokovic</Authors>
-	  <Version>1.1.0</Version>
-	  <PackageReadmeFile>README.md</PackageReadmeFile>
-	  <PackageReleaseNotes>Added documentation</PackageReleaseNotes>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <None Include="..\README.md">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
-  </ItemGroup>
-
+	<PropertyGroup>
+		<TargetFrameworks>netstandard2.0;net7.0;net6.0</TargetFrameworks>
+		<Nullable>enable</Nullable>
+		<LangVersion>preview</LangVersion>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<Title>A simple C# ORM</Title>
+		<Company>Vuk Uskokovic</Company>
+		<Copyright>MIT</Copyright>
+		<RepositoryUrl>https://github.com/vukuskokovic/UskokDB</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageTags>db, database, orm, mysql</PackageTags>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<Authors>Vuk Uskokovic</Authors>
+		<Version>1.2.0</Version>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageReleaseNotes>Added support for .net6 and .netstandard2.0</PackageReleaseNotes>
+	</PropertyGroup>
+	<ItemGroup>
+	
+		<None Include="..\README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
+	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+		<PackageReference Include="System.Dynamic.Runtime" Version="4.3.0" />
+		<PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
+		<PackageReference Include="System.Memory" Version="4.5.5" />
+		<PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
+		
+	</ItemGroup>
 </Project>

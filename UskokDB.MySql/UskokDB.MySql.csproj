@@ -1,10 +1,8 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFrameworks>net7.0;net6.0;netstandard2.0</TargetFrameworks>
     <Title>Mysql extension for UskokDB</Title>
-    <Description>MySql helper for UskokDB
-</Description>
+    <Description>MySql helper for UskokDB</Description>
     <PackageProjectUrl>https://github.com/vukuskokovic/UskokDB</PackageProjectUrl>
     <RepositoryUrl>https://github.com/vukuskokovic/UskokDB</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -12,9 +10,10 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Company>Vuk Uskokovic</Company>
     <Authors>Vuk Uskokovic</Authors>
-    <Version>1.1.0</Version>
+    <Version>1.2.0</Version>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageReleaseNotes>Added documentation</PackageReleaseNotes>
+    <PackageReleaseNotes>Added support for .net6 and .netstandard2.0</PackageReleaseNotes>
+	  <LangVersion>preview</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,10 +21,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="README.md">
+    <None Include="README.md">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
   </ItemGroup>
+
+	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+		<PackageReference Include="System.Memory" Version="4.5.5" />
+	</ItemGroup>
 
 </Project>

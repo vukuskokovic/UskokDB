@@ -71,7 +71,7 @@ namespace UskokDB
                     //Writes the current string and ignores a prohibited character
                     if (isEnd || StringProhibitedCharacters.Contains(asSpan[cursor]))
                     {
-                        sb.Append(asSpan[startCursor..cursor]);
+                        sb.Append(asSpan.Slice(startCursor, cursor).ToArray());
                         startCursor = cursor;
                     }
                 }
@@ -163,7 +163,7 @@ namespace UskokDB
             WriteCurrent:
                 //Ignore if on current character
                 if (startCursor == cursor) continue;
-                builder.Append(querySpan[startCursor..cursor]);
+                builder.Append(querySpan.Slice(startCursor, cursor).ToArray());
                 startCursor = cursor;
                 continue;
 

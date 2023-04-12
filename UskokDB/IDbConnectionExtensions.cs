@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Dynamic;
 using System.Threading.Tasks;
-
 namespace UskokDB
 {
     public static class IDbConnectionExtensions
@@ -19,17 +19,17 @@ namespace UskokDB
         #region Dynamic read
         internal static dynamic ReadDynamic(this IDataReader reader, int fieldCount, string[] names)
         {
-            System.Dynamic.ExpandoObject newValue = new();
+            IDictionary<string, object?> newValue = new ExpandoObject();
             for (var i = 0; i < fieldCount; i++)
             {
                 var name = names[i];
                 var value = reader.GetValue(i);
                 if (value is DBNull or null)
                 {
-                    newValue.TryAdd(name, null);
+                    newValue.Add(name, null);
                     continue;
                 }
-                newValue.TryAdd(name, value);
+                newValue.Add(name, value);
             }
 
             return newValue;

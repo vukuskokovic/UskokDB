@@ -3,7 +3,6 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Text.Json;
 using UskokDB;
 using UskokDB.MySql;
 
@@ -21,7 +20,6 @@ await t4.CreateIfNotExistAsync(connection);
 var all = await connection.QueryAsync<Person>("SELECT * FROM pikara");
 watch.Stop();
 Console.WriteLine(watch.ElapsedMilliseconds);
-Console.WriteLine(JsonSerializer.Serialize(all));
 
 class Person
 {
