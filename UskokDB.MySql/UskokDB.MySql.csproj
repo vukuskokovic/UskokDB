@@ -10,9 +10,9 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Company>Vuk Uskokovic</Company>
     <Authors>Vuk Uskokovic</Authors>
-    <Version>1.2.0</Version>
+    <Version>1.3.0</Version>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageReleaseNotes>Added support for .net6 and .netstandard2.0</PackageReleaseNotes>
+    <PackageReleaseNotes>Created IMySqlTable interface</PackageReleaseNotes>
 	  <LangVersion>preview</LangVersion>
   </PropertyGroup>
 

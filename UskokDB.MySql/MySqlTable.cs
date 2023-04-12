@@ -11,7 +11,13 @@ using System.Threading.Tasks;
 
 namespace UskokDB.MySql
 {
-    public class MySqlTable<T> where T : class, new()
+    public interface IMySqlTable
+    {
+        public Task CreateIfNotExistAsync(DbConnection connection);
+        public void CreateIfNotExist(IDbConnection connection);
+    }
+
+    public class MySqlTable<T> : IMySqlTable where T : class, new()
     {
         public string MySqlTableInitString { get; }
         public string TableName { get; }
