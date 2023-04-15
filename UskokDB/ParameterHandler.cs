@@ -163,7 +163,7 @@ namespace UskokDB
             WriteCurrent:
                 //Ignore if on current character
                 if (startCursor == cursor) continue;
-                builder.Append(querySpan.Slice(startCursor, cursor).ToArray());
+                builder.Append(querySpan.Slice(startCursor, cursor - startCursor).ToArray());
                 startCursor = cursor;
                 continue;
 

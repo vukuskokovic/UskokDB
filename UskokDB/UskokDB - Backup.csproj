@@ -12,9 +12,9 @@
 		<PackageTags>db, database, orm, mysql</PackageTags>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<Authors>Vuk Uskokovic</Authors>
-		<Version>1.4.0</Version>
+		<Version>1.3.0</Version>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<PackageReleaseNotes>Added scalar requests</PackageReleaseNotes>
+		<PackageReleaseNotes>Added support for .net6 and .netstandard2.0</PackageReleaseNotes>
 	</PropertyGroup>
 	<ItemGroup>
 	

@@ -84,5 +84,15 @@ namespace UskokDB
             command.CommandText = ParameterHandler.PopulateParams(commandStr.AsSpan(), properties);
             return await command.ExecuteNonQueryAsync();
         }
+
+        public static async Task<T?> ExecuteScalarAsync<T>(this DbConnection connection, string commandStr, object? properties = null)
+        {
+            await connection.OpenIfNotOpen();
+            using var command = connection.CreateCommand();
+            command.CommandText = ParameterHandler.PopulateParams(commandStr.AsSpan(), properties);
+            var value = await command.ExecuteScalarAsync();
+            if (value is null or DBNull) return default;
+            return (T)Convert.ChangeType(value, typeof(T));
+        }
     }
 }

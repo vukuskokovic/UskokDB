@@ -80,7 +80,7 @@ namespace UskokDB.MySql
             [typeof(char)] = "CHAR",
         };
 
-        private static string GetTypeTableType(Type type, int? maxLength, string? customTypeName = null)
+        private string GetTypeTableType(Type type, int? maxLength, string? customTypeName = null)
         {
             if (type == typeof(string))
             {
@@ -111,7 +111,7 @@ namespace UskokDB.MySql
                 return GetTypeTableType(converter.GetTableType(), maxLength, customTypeName);
             }
 
-            throw new InvalidOperationException($"Could not get type in table of type {type}");
+            throw new InvalidOperationException($"Could not get type in table ({TableName}) of type {type}");
         }
 
         public MySqlTable(string tableName){

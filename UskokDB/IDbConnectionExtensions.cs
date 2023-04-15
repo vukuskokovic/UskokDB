@@ -128,5 +128,15 @@ namespace UskokDB
             command.CommandText = ParameterHandler.PopulateParams(commandSpan, properties);
             return command.ExecuteNonQuery();
         }
+
+        public static T? ExecuteScalar<T>(this IDbConnection connection, string commandStr, object? properties = null)
+        {
+           connection.OpenIfNotOpen();
+            using var command = connection.CreateCommand();
+            command.CommandText = ParameterHandler.PopulateParams(commandStr.AsSpan(), properties);
+            var value = command.ExecuteScalar();
+            if (value is null or DBNull) return default;
+            return (T)Convert.ChangeType(value, typeof(T));
+        }
     }
 }
