@@ -179,14 +179,14 @@ namespace UskokDB.MySql
 
 
 
-        public string GetInstertString(T value, string command)
+        public string GetInsertString(T value, string command)
         {
             var builder = InstertInit(command);
             builder.Append(GetInstertInstance(value));
             return builder.ToString();
         }
 
-        public string GetInstertString(IEnumerable<T> values, string command)
+        public string GetInsertString(IEnumerable<T> values, string command)
         {
             var builder = InstertInit(command);
             IEnumerable<string> instertArray = values.Select(GetInstertInstance);
@@ -196,30 +196,62 @@ namespace UskokDB.MySql
         private const string INSERT = "INSERT";
         private const string REPLACE = "REPLACE";
         //Inseriting
-        public Task<int> InsertAsync(DbConnection connection, T value) => connection.ExecuteAsync(GetInstertString(value, INSERT));
-        public Task<int> InsertAsync(DbConnection connection, IEnumerable<T> values) => connection.ExecuteAsync(GetInstertString(values, INSERT));
-        public Task<int> InsertAsync(DbConnection connection, params T[] values) => connection.ExecuteAsync(GetInstertString(values, INSERT));
-        public Task<int> ReplaceAsync(DbConnection connection, T value) => connection.ExecuteAsync(GetInstertString(value, REPLACE));
-        public Task<int> ReplaceAsync(DbConnection connection, IEnumerable<T> values) => connection.ExecuteAsync(GetInstertString(values, REPLACE));
-        public Task<int> ReplaceAsync(DbConnection connection, params T[] values) => connection.ExecuteAsync(GetInstertString(values, REPLACE));
+        public Task<int> InsertAsync(DbConnection connection, T value) => connection.ExecuteAsync(GetInsertString(value, INSERT));
+        public Task<int> InsertAsync(DbConnection connection, IEnumerable<T> values) => connection.ExecuteAsync(GetInsertString(values, INSERT));
+        public Task<int> InsertAsync(DbConnection connection, params T[] values) => connection.ExecuteAsync(GetInsertString(values, INSERT));
+        public Task<int> ReplaceAsync(DbConnection connection, T value) => connection.ExecuteAsync(GetInsertString(value, REPLACE));
+        public Task<int> ReplaceAsync(DbConnection connection, IEnumerable<T> values) => connection.ExecuteAsync(GetInsertString(values, REPLACE));
+        public Task<int> ReplaceAsync(DbConnection connection, params T[] values) => connection.ExecuteAsync(GetInsertString(values, REPLACE));
 
 
 #if NETSTANDARD2_0
-        public int Insert(IDbConnection connection, T value) => connection.Execute(GetInstertString(value, INSERT).AsSpan());
-        public int Insert(IDbConnection connection, IEnumerable<T> values) => connection.Execute(GetInstertString(values, INSERT).AsSpan());
-        public int Insert(IDbConnection connection, params T[] values) => connection.Execute(GetInstertString(values, INSERT).AsSpan());
+        public int Insert(IDbConnection connection, T value) => connection.Execute(GetInsertString(value, INSERT).AsSpan());
+        public int Insert(IDbConnection connection, IEnumerable<T> values) => connection.Execute(GetInsertString(values, INSERT).AsSpan());
+        public int Insert(IDbConnection connection, params T[] values) => connection.Execute(GetInsertString(values, INSERT).AsSpan());
 
-        public int Replace(IDbConnection connection, T value) => connection.Execute(GetInstertString(value, REPLACE).AsSpan());
-        public int Replace(IDbConnection connection, IEnumerable<T> values) => connection.Execute(GetInstertString(values, REPLACE).AsSpan());
-        public int Replace(IDbConnection connection, params T[] values) => connection.Execute(GetInstertString(values, REPLACE).AsSpan());
+        public int Replace(IDbConnection connection, T value) => connection.Execute(GetInsertString(value, REPLACE).AsSpan());
+        public int Replace(IDbConnection connection, IEnumerable<T> values) => connection.Execute(GetInsertString(values, REPLACE).AsSpan());
+        public int Replace(IDbConnection connection, params T[] values) => connection.Execute(GetInsertString(values, REPLACE).AsSpan());
 #else
-        public int Insert(IDbConnection connection, T value) => connection.Execute(GetInstertString(value, INSERT));
-        public int Insert(IDbConnection connection, IEnumerable<T> values) => connection.Execute(GetInstertString(values, INSERT));
-        public int Insert(IDbConnection connection, params T[] values) => connection.Execute(GetInstertString(values, INSERT));
+        public int Insert(IDbConnection connection, T value) => connection.Execute(GetInsertString(value, INSERT));
+        public int Insert(IDbConnection connection, IEnumerable<T> values) => connection.Execute(GetInsertString(values, INSERT));
+        public int Insert(IDbConnection connection, params T[] values) => connection.Execute(GetInsertString(values, INSERT));
 
-        public int Replace(IDbConnection connection, T value) => connection.Execute(GetInstertString(value, REPLACE));
-        public int Replace(IDbConnection connection, IEnumerable<T> values) => connection.Execute(GetInstertString(values, REPLACE));
-        public int Replace(IDbConnection connection, params T[] values) => connection.Execute(GetInstertString(values, REPLACE));
+        public int Replace(IDbConnection connection, T value) => connection.Execute(GetInsertString(value, REPLACE));
+        public int Replace(IDbConnection connection, IEnumerable<T> values) => connection.Execute(GetInsertString(values, REPLACE));
+        public int Replace(IDbConnection connection, params T[] values) => connection.Execute(GetInsertString(values, REPLACE));
 #endif
+
+        public string GetColumnInString<TValue>(string columnName, IEnumerable<TValue> values)
+        {
+            return $"SELECT * FROM `{TableName}` WHERE {columnName} IN ({string.Join(",", values.Select(x => ParameterHandler.WriteValue(x)))})";
+        }
+
+        public List<T> GetByColumn<TValue>(IDbConnection connection, string columnName, IEnumerable<TValue> values) => connection.Query<T>(GetColumnInString(columnName, values).AsSpan());
+        public Task<List<T>> GetByColumnAsync<TValue>(DbConnection connection, string columnName, IEnumerable<TValue> values) => connection.QueryAsync<T>(GetColumnInString(columnName, values));
+        
+        private string GetByKeySqlString(object value)
+        {
+            if (PrimaryKey == null) throw new InvalidOperationException($"Table {TableName} has no primary key");
+            return $"SELECT * FROM `{TableName}` WHERE {PrimaryKey.PropertyName}={ParameterHandler.WriteValue(value)} LIMIT 1";
+        }
+
+        public T? GetByKey(IDbConnection connection, object keyValue) =>
+            connection.QuerySingle<T>(GetByKeySqlString(keyValue).AsSpan());
+        public Task<T?> GetByKeyAsync(DbConnection connection, object keyValue) =>
+            connection.QuerySingleAsync<T>(GetByKeySqlString(keyValue));
+
+
+        private string GetByKeysSqlString<TValue>(IEnumerable<TValue> values)
+        {
+            if (PrimaryKey == null) throw new InvalidOperationException($"Table {TableName} has no primary key");
+
+            return GetColumnInString(PrimaryKey.PropertyName, values);
+        }
+        
+        public List<T?> GetByKeys<TValue>(IDbConnection connection, IEnumerable<TValue> values) =>
+            connection.Query<T>(GetByKeysSqlString(values).AsSpan());
+        public Task<List<T?>> GetByKeysAsync<TValue>(DbConnection connection, IEnumerable<TValue> values) =>
+            connection.QueryAsync<T>(GetByKeysSqlString(values));
     }
 }

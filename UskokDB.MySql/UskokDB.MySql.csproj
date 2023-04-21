@@ -10,9 +10,9 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Company>Vuk Uskokovic</Company>
     <Authors>Vuk Uskokovic</Authors>
-    <Version>1.3.0</Version>
+    <Version>1.5.0</Version>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageReleaseNotes>Created IMySqlTable interface</PackageReleaseNotes>
+    <PackageReleaseNotes>Added get by column and keys</PackageReleaseNotes>
 	  <LangVersion>preview</LangVersion>
   </PropertyGroup>
 
