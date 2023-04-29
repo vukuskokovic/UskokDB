@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Data;
 using System.Data.Common;
+using System.Data.SqlTypes;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
@@ -15,6 +16,7 @@ namespace UskokDB.MySql
     {
         public Task CreateIfNotExistAsync(DbConnection connection);
         public void CreateIfNotExist(IDbConnection connection);
+        public string GetCreationString();
     }
 
     public class MySqlTable<T> : IMySqlTable where T : class, new()
@@ -78,6 +80,7 @@ namespace UskokDB.MySql
             [typeof(byte)] = "BYTE",
             [typeof(bool)] = "BOOL",
             [typeof(char)] = "CHAR",
+            [typeof(DateTime)] = "DATETIME"
         };
 
         private string GetTypeTableType(Type type, int? maxLength, string? customTypeName = null)
@@ -140,6 +143,8 @@ namespace UskokDB.MySql
 
         public Task CreateIfNotExistAsync(DbConnection connection) => connection.ExecuteAsync(MySqlTableInitString);
 
+
+        public string GetCreationString() => MySqlTableInitString;
 
 #if NETSTANDARD2_0
         public void CreateIfNotExist(IDbConnection connection) => connection.Execute(MySqlTableInitString.AsSpan());

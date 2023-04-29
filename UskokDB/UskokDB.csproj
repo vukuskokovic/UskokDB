@@ -12,9 +12,9 @@
 		<PackageTags>db, database, orm, mysql</PackageTags>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<Authors>Vuk Uskokovic</Authors>
-		<Version>1.4.0</Version>
+		<Version>1.6.0</Version>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<PackageReleaseNotes>Added scalar requests</PackageReleaseNotes>
+		<PackageReleaseNotes>Fixed datetime insertion</PackageReleaseNotes>
 	</PropertyGroup>
 	<ItemGroup>
 	

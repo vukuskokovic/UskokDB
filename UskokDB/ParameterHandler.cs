@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -24,7 +25,8 @@ namespace UskokDB
             typeof(bool),
             typeof(char),
             typeof(string),
-            typeof(decimal)
+            typeof(decimal),
+            typeof(DateTime)
         };
 
         public static Dictionary<Type, IParamterConverter> ParamterConverters = new()
@@ -56,6 +58,11 @@ namespace UskokDB
             if (value is byte or short or ushort or int or uint or long or ulong or bool or float or double or char or decimal)
             {
                 return value?.ToString() ?? NullValue;
+            }
+
+            if (value is DateTime dateTime)
+            {
+                return $"'{dateTime:yyyy-MM-dd HH:mm:ss}'";
             }
 
             if (value is string str)
@@ -102,6 +109,7 @@ namespace UskokDB
         {
             if (value is null or DBNull) return null;
 
+            
             if (primitiveTypes.Contains(type)) return value;
 
 
