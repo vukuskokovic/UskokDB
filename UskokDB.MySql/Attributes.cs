@@ -4,8 +4,33 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace UskokDB.MySql;
+// ReSharper disable once CheckNamespace
+namespace UskokDB.MySql.Attributes;
 
-public class ColumnNotNull : Attribute { }
+public sealed class ColumnNotNullAttribute : Attribute { }
 
-public class AutoIncrement : Attribute { }
+public sealed class AutoIncrementAttribute : Attribute { }
+
+public sealed class MaxLengthAttribute : Attribute
+{
+    public int Length { get; }
+
+    public MaxLengthAttribute(int length)
+    {
+        Length = length;
+    }
+}
+
+public sealed class KeyAttribute : Attribute
+{
+}
+
+public sealed class ForeignKeyAttribute : Attribute
+{
+    public string TableString { get; }
+
+    public ForeignKeyAttribute(string tableName, string propertyName)
+    {
+        TableString = $"{tableName}({propertyName})";
+    }
+}

@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Reflection;
+using UskokDB.Attributes;
+
 namespace UskokDB
 {
     public static class TypeMetadata<T> where T : class, new()

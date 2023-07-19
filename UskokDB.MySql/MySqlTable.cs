@@ -1,14 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Data;
 using System.Data.Common;
-using System.Data.SqlTypes;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using UskokDB.MySql.Attributes;
 
 namespace UskokDB.MySql
 {
@@ -26,12 +24,14 @@ namespace UskokDB.MySql
 
         private TypeMetadataProperty? PrimaryKey = null;
         private const string Space = " ";
+        private List<Tuple<string, string>> ForeignKeys = new();
         private string GetPropertyTableInit(TypeMetadataProperty property)
         {
             var type = property.Type;
             bool isKey = property.PropertyInfo.GetCustomAttribute<KeyAttribute>() is not null;
-            bool isNotNull = property.PropertyInfo.GetCustomAttribute<ColumnNotNull>() is not null;
-            bool isAutoIncrement = property.PropertyInfo.GetCustomAttribute<AutoIncrement>() is not null;
+            var foreignKeyAttribute = property.PropertyInfo.GetCustomAttribute<ForeignKeyAttribute>();
+            bool isNotNull = property.PropertyInfo.GetCustomAttribute<ColumnNotNullAttribute>() is not null;
+            bool isAutoIncrement = property.PropertyInfo.GetCustomAttribute<AutoIncrementAttribute>() is not null;
             int? maxLength = property.PropertyInfo.GetCustomAttribute<MaxLengthAttribute>()?.Length;
             List<string> attributes = new();
             if(isNotNull)
@@ -41,6 +41,11 @@ namespace UskokDB.MySql
             if (isAutoIncrement)
             {
                 attributes.Add("AUTO_INCREMENT");
+            }
+
+            if (foreignKeyAttribute != null)
+            {
+                ForeignKeys.Add(new Tuple<string, string>(property.PropertyName, foreignKeyAttribute.TableString));
             }
 
             if (isKey)
@@ -136,6 +141,13 @@ namespace UskokDB.MySql
                 }
             }
 
+            if (ForeignKeys.Count > 0)
+            {
+                sb.Append(", ");
+                sb.Append(string.Join(",", ForeignKeys.Select(x => $"FOREIGN KEY ({x.Item1}) references {x.Item2}")));
+            }
+
+            
             sb.Append(')');
             MySqlTableInitString = sb.ToString();
             sb.Clear();

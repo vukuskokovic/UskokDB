@@ -1,22 +1,22 @@
 ﻿using MySqlConnector;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Data.SqlTypes;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using UskokDB;
 using UskokDB.MySql;
+using UskokDB.MySql.Attributes;
 
 
-var table = new MySqlTable<TestSql>("testsql2");
+var table = new MySqlTable<TestSql>("test1");
+var table2 = new MySqlTable<TestSql2>("test2");
 var connection = new MySqlConnection("Server=localhost;User ID=root;Database=test");
 await table.CreateIfNotExistAsync(connection);
-await table.InsertAsync(connection, new TestSql()
-{
-    Text = DateTime.Now
-});
-Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(await connection.QueryAsync("SELECT * FROM testsql2")));
+await table2.CreateIfNotExistAsync(connection);
 class TestSql
 {
-    public DateTime Text { get; set; }
+    [Key]
+    public Guid Id { get; }
+}
+
+class TestSql2
+{
+    [ForeignKey("test1", "Id")]
+    public Guid Fk { get; }
 }

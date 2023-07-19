@@ -10,9 +10,9 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Company>Vuk Uskokovic</Company>
     <Authors>Vuk Uskokovic</Authors>
-    <Version>1.7.0</Version>
+    <Version>1.9.0</Version>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageReleaseNotes>Added creation string to IMySqlTable interface</PackageReleaseNotes>
+    <PackageReleaseNotes>Added foreign key support and made attributes part of the library</PackageReleaseNotes>
 	  <LangVersion>preview</LangVersion>
   </PropertyGroup>
 
