@@ -144,7 +144,7 @@ namespace UskokDB.MySql
             if (ForeignKeys.Count > 0)
             {
                 sb.Append(", ");
-                sb.Append(string.Join(",", ForeignKeys.Select(x => $"FOREIGN KEY ({x.Item1}) references {x.Item2}")));
+                sb.Append(string.Join(",", ForeignKeys.Select(x => $"FOREIGN KEY ({x.Item1}) REFERENCES {x.Item2}")));
             }
 
             
