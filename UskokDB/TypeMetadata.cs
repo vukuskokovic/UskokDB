@@ -7,10 +7,6 @@ namespace UskokDB
 {
     public static class TypeMetadata<T> where T : class, new()
     {
-        /// <summary>
-        /// Creates the type metadata
-        /// </summary>
-        /// <param name="type">Type to generate the metadata</param>
         static TypeMetadata()
         {
             Type = typeof(T);
@@ -24,7 +20,7 @@ namespace UskokDB
         }
 
         public static Type Type { get; }
-        public static List<TypeMetadataProperty> Properties { get; } = new List<TypeMetadataProperty>();
+        public static List<TypeMetadataProperty> Properties { get; } = new();
     }
 
     public class TypeMetadataProperty

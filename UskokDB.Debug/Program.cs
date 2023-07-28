@@ -1,22 +1,25 @@
 ﻿using MySqlConnector;
+using Newtonsoft.Json;
 using UskokDB;
+using UskokDB.Attributes;
 using UskokDB.MySql;
 using UskokDB.MySql.Attributes;
 
-
-var table = new MySqlTable<TestSql>("test1");
-var table2 = new MySqlTable<TestSql2>("test2");
 var connection = new MySqlConnection("Server=localhost;User ID=root;Database=test");
-await table.CreateIfNotExistAsync(connection);
-await table2.CreateIfNotExistAsync(connection);
-class TestSql
+ParameterHandler.UseJsonForUnknownClassesAndStructs = true;
+ParameterHandler.JsonWriter = (obj) => obj == null ? null : JsonConvert.SerializeObject(obj);
+ParameterHandler.JsonReader = (jsonStr, type) => jsonStr == null ? null : JsonConvert.DeserializeObject(jsonStr, type);
+await TestJson.CreateIfNotExistAsync(connection);
+
+var read = await connection.QueryAsync<TestJson>("SELECT * FROM testjson");
+Console.WriteLine(JsonConvert.SerializeObject(read));
+
+public class TestJson : MySqlTable<TestJson>
 {
-    [Key]
-    public Guid Id { get; }
+    public TestJsonObject Test { get; set; }
 }
 
-class TestSql2
+public class TestJsonObject
 {
-    [ForeignKey("test1", "Id")]
-    public Guid Fk { get; }
+    public string Test = "312";
 }

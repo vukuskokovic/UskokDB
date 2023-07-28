@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 
 // ReSharper disable once CheckNamespace
 namespace UskokDB.MySql.Attributes;
-
+[AttributeUsage(AttributeTargets.Property)]
 public sealed class ColumnNotNullAttribute : Attribute { }
-
+[AttributeUsage(AttributeTargets.Property)]
 public sealed class AutoIncrementAttribute : Attribute { }
-
+[AttributeUsage(AttributeTargets.Property)]
 public sealed class MaxLengthAttribute : Attribute
 {
     public int Length { get; }
@@ -20,17 +20,23 @@ public sealed class MaxLengthAttribute : Attribute
         Length = length;
     }
 }
-
+[AttributeUsage(AttributeTargets.Property)]
 public sealed class KeyAttribute : Attribute
 {
 }
 
-public sealed class ForeignKeyAttribute : Attribute
+[AttributeUsage(AttributeTargets.Property)]
+public sealed class ForeignKeyAttribute<T> : Attribute where T : MySqlTable<T>, new()
 {
-    public string TableString { get; }
+}
 
-    public ForeignKeyAttribute(string tableName, string propertyName)
+[AttributeUsage(AttributeTargets.Class)]
+public sealed class TableNameAttribute : Attribute
+{
+    public string Name { get; }
+
+    public TableNameAttribute(string name)
     {
-        TableString = $"{tableName}({propertyName})";
+        Name = name;
     }
 }

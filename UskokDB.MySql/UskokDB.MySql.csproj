@@ -10,10 +10,12 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Company>Vuk Uskokovic</Company>
     <Authors>Vuk Uskokovic</Authors>
-    <Version>1.9.0</Version>
+    <Version>2.0.0</Version>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageReleaseNotes>Added foreign key support and made attributes part of the library</PackageReleaseNotes>
+    <PackageReleaseNotes>Foreign key is now a generic attribute, added json values. Mysql table now has static properties, instead of having to be initiliazed.
+Table names are now used as a attribute</PackageReleaseNotes>
 	  <LangVersion>preview</LangVersion>
+	  <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

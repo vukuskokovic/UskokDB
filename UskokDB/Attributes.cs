@@ -1,7 +1,7 @@
 using System;
 // ReSharper disable once CheckNamespace
 namespace UskokDB.Attributes;
-
+[AttributeUsage(AttributeTargets.Property)]
 public sealed class ColumnAttribute : Attribute
 {
     public string Name { get; }
@@ -11,5 +11,5 @@ public sealed class ColumnAttribute : Attribute
         Name = name;
     }
 }
-
+[AttributeUsage(AttributeTargets.Property)]
 public sealed class NotMappedAttribute : Attribute { }

@@ -1,6 +1,8 @@
 # UskokDB
 And extension library for `UskokDB` used for runtime table creating and inserting/replacing to the table some examples:
 
+# THIS README IS FOR OLDER VERSIONS NEW ONE IS YET TO COME OUT!!!!
+
 ## Example 1
 ```cs
 class Person 

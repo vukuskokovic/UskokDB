@@ -6,7 +6,16 @@ namespace UskokDB
 {
     public static class ParameterHandler
     {
-        private static HashSet<Type> primitiveTypes = new() { 
+        /// <summary>
+        /// When writing/reading a class or struct type 
+        /// </summary>
+        public static bool UseJsonForUnknownClassesAndStructs = false;
+
+        public static Func<object?, string>? JsonWriter = null;
+        public static Func<string?, Type, object?>? JsonReader = null;
+
+
+        private static HashSet<Type> PrimitiveTypes = new() { 
             typeof(char),
             typeof(byte),
             typeof(int),
@@ -24,19 +33,15 @@ namespace UskokDB
             typeof(DateTime)
         };
 
-        public static Dictionary<Type, IParamterConverter> ParamterConverters = new()
+        public static Dictionary<Type, IParameterConverter> ParameterConverters = new()
         {
-            [typeof(Guid)] = new DefaultParamterConverter<Guid, string>((guid) => guid.ToString(), Guid.Parse, Guid.Empty.ToString().Length)
+            [typeof(Guid)] = new DefaultParameterConverter<Guid, string>((guid) => guid.ToString(), Guid.Parse, Guid.Empty.ToString().Length)
         };
 
-        /// <summary>
-        /// Default prohibited characters inside of a string
-        /// </summary>
-        public static HashSet<char> StringProhibitedCharacters = new() {
-            '\'',
-            '<',
-            '>'
-        };
+        public static bool ShouldJsonBeUsedForType(Type type)
+        {
+            return UseJsonForUnknownClassesAndStructs && (type.IsClass || type.IsArray || type.IsValueType);
+        }
 
         private const string NullValue = "NULL";
         private const string EmptyString = "''";
@@ -52,7 +57,7 @@ namespace UskokDB
             //all generic types
             if (value is byte or short or ushort or int or uint or long or ulong or bool or float or double or char or decimal)
             {
-                return value?.ToString() ?? NullValue;
+                return value.ToString();
             }
 
             if (value is DateTime dateTime)
@@ -62,56 +67,51 @@ namespace UskokDB
 
             if (value is string str)
             {
-                if (str.Length == 0) return EmptyString;
-                var asSpan = str.AsSpan();
-                var sb = new StringBuilder();
-                sb.Append('\'');
-                int startCursor = 0;
-                for(int cursor = 0; cursor <= asSpan.Length; cursor++)
-                {
-                    bool isEnd = cursor == asSpan.Length;
-                    //Writes the current string and ignores a prohibited character
-                    if (isEnd || StringProhibitedCharacters.Contains(asSpan[cursor]))
-                    {
-                        sb.Append(asSpan.Slice(startCursor, cursor).ToArray());
-                        startCursor = cursor;
-                    }
-                }
-
-
-                sb.Append('\'');
-                return sb.ToString();
+                return str.Length == 0 ? 
+                    EmptyString : 
+                    $"'{str.Replace('\'', '\0')}'";
             }
-
-
+            
             var type = value.GetType();
             if (type.IsEnum)
             {
                 return Convert.ChangeType(value, type.GetEnumUnderlyingType())?.ToString() ?? NullValue;
             }
-
-            if(ParamterConverters.TryGetValue(type, out var converter))
+            
+            if(ParameterConverters.TryGetValue(type, out var converter))
             {
-
                 return WriteValue(converter.Write(value));
             }
 
-
+            if (ShouldJsonBeUsedForType(type))
+            {
+                if (JsonWriter == null) throw new NullReferenceException("Configured to use json for unknown types and structs but json writer was null");
+                
+                return WriteValue(JsonWriter(value));
+            }
+            
             return value?.ToString() ?? NullValue;
         }
 
         public static object? ReadValue(object? value, Type type)
         {
             if (value is null or DBNull) return null;
-
             
-            if (primitiveTypes.Contains(type)) return value;
-
-
-            if(ParamterConverters.TryGetValue(type, out var paramterConverter))
+            if(ParameterConverters.TryGetValue(type, out var parameterConverter))
             {
-                return paramterConverter.Read(value);
+                return parameterConverter.Read(value);
             }
+            
+            if (ShouldJsonBeUsedForType(type))
+            {
+                if (JsonReader == null) throw new NullReferenceException("Configured to use json for unknown types and structs but json reader was null");
+                if(value is not string jsonStr) 
+                    throw new Exception($"Error reading type {type.FullName} did not get json string from the database");
+                
+                return JsonReader(jsonStr, type);
+            }
+            
+            if (PrimitiveTypes.Contains(type)) return value;
 
             return value;
         }
@@ -137,11 +137,11 @@ namespace UskokDB
 
             var paramsHashMap = GetParamsHashmap(paramsObj);
             StringBuilder builder = new();
-            int startCursor = 0;
-            bool readingParam = false;
-            for(int cursor = startCursor; cursor <= querySpan.Length; cursor++)
+            var startCursor = 0;
+            var readingParam = false;
+            for(var cursor = startCursor; cursor <= querySpan.Length; cursor++)
             {
-                bool isEnd = cursor == querySpan.Length;
+                var isEnd = cursor == querySpan.Length;
                 if (isEnd)
                 {
                     if (!readingParam)
@@ -155,7 +155,7 @@ namespace UskokDB
                     readingParam = true;
                     goto WriteCurrent;
                 }
-                else if(readingParam && !char.IsLetter(querySpan[cursor]) && !char.IsDigit(querySpan[cursor]))
+                if(readingParam && !char.IsLetter(querySpan[cursor]) && !char.IsDigit(querySpan[cursor]))
                 {
                     readingParam = false;
                     goto WriteParam;
@@ -173,7 +173,7 @@ namespace UskokDB
             //Write the parameter
             WriteParam:
                 //Ignore the first character since it is going to be an '@'
-                string paramName = querySpan.Slice(startCursor + 1, cursor - startCursor - 1).ToString();
+                var paramName = querySpan.Slice(startCursor + 1, cursor - startCursor - 1).ToString();
                 if (!paramsHashMap.TryGetValue(paramName, out var paramValue)) paramValue = NullValue;
 
                 startCursor = cursor;
