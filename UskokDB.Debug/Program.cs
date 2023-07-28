@@ -6,20 +6,16 @@ using UskokDB.MySql;
 using UskokDB.MySql.Attributes;
 
 var connection = new MySqlConnection("Server=localhost;User ID=root;Database=test");
-ParameterHandler.UseJsonForUnknownClassesAndStructs = true;
-ParameterHandler.JsonWriter = (obj) => obj == null ? null : JsonConvert.SerializeObject(obj);
-ParameterHandler.JsonReader = (jsonStr, type) => jsonStr == null ? null : JsonConvert.DeserializeObject(jsonStr, type);
-await TestJson.CreateIfNotExistAsync(connection);
+await TestPrimryKey.CreateIfNotExistAsync(connection);
+await TestForeignKEYYYY.CreateIfNotExistAsync(connection);
 
-var read = await connection.QueryAsync<TestJson>("SELECT * FROM testjson");
-Console.WriteLine(JsonConvert.SerializeObject(read));
-
-public class TestJson : MySqlTable<TestJson>
+public class TestForeignKEYYYY : MySqlTable<TestForeignKEYYYY>
 {
-    public TestJsonObject Test { get; set; }
+    [ForeignKey<TestPrimryKey>]
+    public int Test { get; set; }
 }
 
-public class TestJsonObject
+public class TestPrimryKey : MySqlTable<TestPrimryKey>
 {
-    public string Test = "312";
+    [Key] public int Test { get; set; }
 }

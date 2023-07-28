@@ -10,17 +10,12 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Company>Vuk Uskokovic</Company>
     <Authors>Vuk Uskokovic</Authors>
-    <Version>2.0.0</Version>
+    <Version>2.0.1</Version>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageReleaseNotes>Foreign key is now a generic attribute, added json values. Mysql table now has static properties, instead of having to be initiliazed.
-Table names are now used as a attribute</PackageReleaseNotes>
+    <PackageReleaseNotes>Quick fix for netstandard 2.0</PackageReleaseNotes>
 	  <LangVersion>preview</LangVersion>
 	  <Nullable>enable</Nullable>
   </PropertyGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\UskokDB\UskokDB.csproj" />
-  </ItemGroup>
 
   <ItemGroup>
     <None Include="README.md">

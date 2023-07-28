@@ -59,11 +59,13 @@ namespace UskokDB.MySql
             sb.Clear();
         }
 
+        
+
         private static string GetPropertyTableInit(TypeMetadataProperty property)
         {
             var type = property.Type;
             var isKey = property.PropertyInfo.GetCustomAttribute<KeyAttribute>() is not null;
-            var foreignKeyAttribute = property.PropertyInfo.GetCustomAttribute(typeof(ForeignKeyAttribute<>));
+            
             var isNotNull = property.PropertyInfo.GetCustomAttribute<ColumnNotNullAttribute>() is not null;
             var isAutoIncrement = property.PropertyInfo.GetCustomAttribute<AutoIncrementAttribute>() is not null;
             var maxLength = property.PropertyInfo.GetCustomAttribute<MaxLengthAttribute>()?.Length;
@@ -76,11 +78,16 @@ namespace UskokDB.MySql
             {
                 attributes.Add("AUTO_INCREMENT");
             }
+            
+            var foreignKeyAttribute = property.PropertyInfo.GetCustomAttributes(true).FirstOrDefault(attribute =>
+            {
+                var attributeType = attribute.GetType();
+                return attributeType.IsGenericType;
+            })?.GetType();
 
             if (foreignKeyAttribute != null)
             {
-                var foreignKeyAttributeType = foreignKeyAttribute.GetType();
-                var tableType = foreignKeyAttributeType.GenericTypeArguments[0];
+                var tableType = foreignKeyAttribute.GenericTypeArguments[0];
                 const BindingFlags bindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.FlattenHierarchy;
                 var primaryKeyObj = tableType.GetProperty(nameof(PrimaryKey), bindingFlags)?.GetValue(null);
                 if (primaryKeyObj is not TypeMetadataProperty primaryKeyMetaData)
