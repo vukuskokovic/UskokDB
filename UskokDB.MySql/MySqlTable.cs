@@ -181,13 +181,8 @@ namespace UskokDB.MySql
         }
 
         public static Task CreateIfNotExistAsync(DbConnection connection) => connection.ExecuteAsync(MySqlTableInitString);
-
-#if NETSTANDARD2_0
-        public static void CreateIfNotExist(IDbConnection connection) => connection.Execute(MySqlTableInitString.AsSpan());
-#else
+        
         public static void CreateIfNotExist(IDbConnection connection) => connection.Execute(MySqlTableInitString);
-#endif
-
 
         public static string GetInsertInstance(T instance)
         {
@@ -230,13 +225,12 @@ namespace UskokDB.MySql
         public static string GetInsertString(IEnumerable<T> values, string command)
         {
             var builder = InsertInit(command);
-            IEnumerable<string> instertArray = values.Select(GetInsertInstance);
-            builder.Append(string.Join(",", instertArray));
+            var insertArray = values.Select(GetInsertInstance);
+            builder.Append(string.Join(",", insertArray));
             return builder.ToString();
         }
         private const string INSERT = "INSERT";
         private const string REPLACE = "REPLACE";
-        //Inseriting
         public static Task<int> InsertAsync(DbConnection connection, T value) => connection.ExecuteAsync(GetInsertString(value, INSERT));
         public static Task<int> InsertAsync(DbConnection connection, IEnumerable<T> values) => connection.ExecuteAsync(GetInsertString(values, INSERT));
         public static Task<int> InsertAsync(DbConnection connection, params T[] values) => connection.ExecuteAsync(GetInsertString(values, INSERT));
@@ -244,16 +238,7 @@ namespace UskokDB.MySql
         public static Task<int> ReplaceAsync(DbConnection connection, IEnumerable<T> values) => connection.ExecuteAsync(GetInsertString(values, REPLACE));
         public static Task<int> ReplaceAsync(DbConnection connection, params T[] values) => connection.ExecuteAsync(GetInsertString(values, REPLACE));
 
-
-#if NETSTANDARD2_0
-        public static int Insert(IDbConnection connection, T value) => connection.Execute(GetInsertString(value, INSERT).AsSpan());
-        public static int Insert(IDbConnection connection, IEnumerable<T> values) => connection.Execute(GetInsertString(values, INSERT).AsSpan());
-        public static int Insert(IDbConnection connection, params T[] values) => connection.Execute(GetInsertString(values, INSERT).AsSpan());
-
-        public static int Replace(IDbConnection connection, T value) => connection.Execute(GetInsertString(value, REPLACE).AsSpan());
-        public static int Replace(IDbConnection connection, IEnumerable<T> values) => connection.Execute(GetInsertString(values, REPLACE).AsSpan());
-        public static int Replace(IDbConnection connection, params T[] values) => connection.Execute(GetInsertString(values, REPLACE).AsSpan());
-#else
+        
         public static int Insert(IDbConnection connection, T value) => connection.Execute(GetInsertString(value, INSERT));
         public static int Insert(IDbConnection connection, IEnumerable<T> values) => connection.Execute(GetInsertString(values, INSERT));
         public static int Insert(IDbConnection connection, params T[] values) => connection.Execute(GetInsertString(values, INSERT));
@@ -261,14 +246,13 @@ namespace UskokDB.MySql
         public static int Replace(IDbConnection connection, T value) => connection.Execute(GetInsertString(value, REPLACE));
         public static int Replace(IDbConnection connection, IEnumerable<T> values) => connection.Execute(GetInsertString(values, REPLACE));
         public static int Replace(IDbConnection connection, params T[] values) => connection.Execute(GetInsertString(values, REPLACE));
-#endif
 
         public static string GetColumnInString<TValue>(string columnName, IEnumerable<TValue> values)
         {
             return $"SELECT * FROM `{TableName}` WHERE {columnName} IN ({string.Join(",", values.Select(x => ParameterHandler.WriteValue(x)))})";
         }
 
-        public static List<T> GetByColumn<TValue>(IDbConnection connection, string columnName, IEnumerable<TValue> values) => connection.Query<T>(GetColumnInString(columnName, values).AsSpan());
+        public static List<T> GetByColumn<TValue>(IDbConnection connection, string columnName, IEnumerable<TValue> values) => connection.Query<T>(GetColumnInString(columnName, values));
         public static Task<List<T>> GetByColumnAsync<TValue>(DbConnection connection, string columnName, IEnumerable<TValue> values) => connection.QueryAsync<T>(GetColumnInString(columnName, values));
         
         private static string GetByKeySqlString(object value)
@@ -278,7 +262,7 @@ namespace UskokDB.MySql
         }
 
         public static T? GetByKey(IDbConnection connection, object keyValue) =>
-            connection.QuerySingle<T>(GetByKeySqlString(keyValue).AsSpan());
+            connection.QuerySingle<T>(GetByKeySqlString(keyValue));
         public static Task<T?> GetByKeyAsync(DbConnection connection, object keyValue) =>
             connection.QuerySingleAsync<T>(GetByKeySqlString(keyValue));
 
@@ -290,9 +274,9 @@ namespace UskokDB.MySql
             return GetColumnInString(PrimaryKey.PropertyName, values);
         }
         
-        public static List<T?> GetByKeys<TValue>(IDbConnection connection, IEnumerable<TValue> values) =>
-            connection.Query<T>(GetByKeysSqlString(values).AsSpan());
-        public static Task<List<T?>> GetByKeysAsync<TValue>(DbConnection connection, IEnumerable<TValue> values) =>
+        public static List<T> GetByKeys<TValue>(IDbConnection connection, IEnumerable<TValue> values) =>
+            connection.Query<T>(GetByKeysSqlString(values));
+        public static Task<List<T>> GetByKeysAsync<TValue>(DbConnection connection, IEnumerable<TValue> values) =>
             connection.QueryAsync<T>(GetByKeysSqlString(values));
     }
 }

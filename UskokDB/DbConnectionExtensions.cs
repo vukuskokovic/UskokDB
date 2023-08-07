@@ -21,7 +21,7 @@ namespace UskokDB
         {
             await connection.OpenIfNotOpen();
             using var command = connection.CreateCommand();
-            command.CommandText = ParameterHandler.PopulateParams(commandStr.AsSpan(), properties);
+            command.CommandText = ParameterHandler.PopulateParams(commandStr, properties);
             using var reader = await command.ExecuteReaderAsync();
             List<dynamic> list = new();
 
@@ -36,26 +36,26 @@ namespace UskokDB
             return list;
         }
 
-        public static async Task<dynamic?> QuerySingleAsync(this DbConnection connection, string comamndStr, object? properties = null)
+        public static async Task<dynamic?> QuerySingleAsync(this DbConnection connection, string commandString, object? properties = null)
         {
             await connection.OpenIfNotOpen();
             using var command = connection.CreateCommand();
-            command.CommandText = ParameterHandler.PopulateParams(comamndStr.AsSpan(), properties);
+            command.CommandText = ParameterHandler.PopulateParams(commandString, properties);
             using var reader = await command.ExecuteReaderAsync();
             List<dynamic> list = new();
-            int columnCount = reader.FieldCount;
-            string[] names = reader.GetColumnNames(columnCount);
+            var columnCount = reader.FieldCount;
+            var names = reader.GetColumnNames(columnCount);
 
             if (!await reader.ReadAsync()) return null;
 
             return reader.ReadDynamic(columnCount, names);
         }
 
-        public static async Task<List<T>> QueryAsync<T>(this DbConnection connection, string commandSpan, object? properties = null) where T : class, new()
+        public static async Task<List<T>> QueryAsync<T>(this DbConnection connection, string commandString, object? properties = null) where T : class, new()
         {
             await connection.OpenIfNotOpen();
             using var command = connection.CreateCommand();
-            command.CommandText = ParameterHandler.PopulateParams(commandSpan.AsSpan(), properties);
+            command.CommandText = ParameterHandler.PopulateParams(commandString, properties);
             using var reader = await command.ExecuteReaderAsync();
             List<T> list = new();
             while (await reader.ReadAsync())
@@ -66,30 +66,30 @@ namespace UskokDB
             return list;
         }
 
-        public static async Task<T?> QuerySingleAsync<T>(this DbConnection connection, string commandSpan, object? properties = null) where T : class, new()
+        public static async Task<T?> QuerySingleAsync<T>(this DbConnection connection, string commandString, object? properties = null) where T : class, new()
         {
             await connection.OpenIfNotOpen();
             using var command = connection.CreateCommand();
-            command.CommandText = ParameterHandler.PopulateParams(commandSpan.AsSpan(), properties);
+            command.CommandText = ParameterHandler.PopulateParams(commandString, properties);
             using var reader = await command.ExecuteReaderAsync();
 
             if (!await reader.ReadAsync()) return null;
             return reader.Read<T>();
         }
 
-        public static async Task<int> ExecuteAsync(this DbConnection connection, string commandStr, object? properties = null)
+        public static async Task<int> ExecuteAsync(this DbConnection connection, string commandString, object? properties = null)
         {
             await connection.OpenIfNotOpen();
             using var command = connection.CreateCommand();
-            command.CommandText = ParameterHandler.PopulateParams(commandStr.AsSpan(), properties);
+            command.CommandText = ParameterHandler.PopulateParams(commandString, properties);
             return await command.ExecuteNonQueryAsync();
         }
 
-        public static async Task<T?> ExecuteScalarAsync<T>(this DbConnection connection, string commandStr, object? properties = null)
+        public static async Task<T?> ExecuteScalarAsync<T>(this DbConnection connection, string commandString, object? properties = null)
         {
             await connection.OpenIfNotOpen();
             using var command = connection.CreateCommand();
-            command.CommandText = ParameterHandler.PopulateParams(commandStr.AsSpan(), properties);
+            command.CommandText = ParameterHandler.PopulateParams(commandString, properties);
             var value = await command.ExecuteScalarAsync();
             if (value is null or DBNull) return default;
             return (T)Convert.ChangeType(value, typeof(T));

@@ -43,11 +43,11 @@ namespace UskokDB
             return names;
         }
 
-        public static List<dynamic> Query(this IDbConnection connection, ReadOnlySpan<char> commandSpan, object? properties = null)
+        public static List<dynamic> Query(this IDbConnection connection, string commandString, object? properties = null)
         {
             connection.OpenIfNotOpen();
             using var command = connection.CreateCommand();
-            command.CommandText = ParameterHandler.PopulateParams(commandSpan, properties);
+            command.CommandText = ParameterHandler.PopulateParams(commandString, properties);
             using var reader = command.ExecuteReader();
             List<dynamic> list = new();
 
@@ -62,11 +62,11 @@ namespace UskokDB
             return list;
         }
 
-        public static dynamic? QuerySingle(this IDbConnection connection, ReadOnlySpan<char> commandSpan, object? properties = null)
+        public static dynamic? QuerySingle(this IDbConnection connection, string commandString, object? properties = null)
         {
             connection.OpenIfNotOpen();
             using var command = connection.CreateCommand();
-            command.CommandText = ParameterHandler.PopulateParams(commandSpan, properties);
+            command.CommandText = ParameterHandler.PopulateParams(commandString, properties);
             using var reader = command.ExecuteReader();
             List<dynamic> list = new();
             int columnCount = reader.FieldCount;
@@ -93,11 +93,11 @@ namespace UskokDB
         }
 
 
-        public static List<T> Query<T>(this IDbConnection connection, ReadOnlySpan<char> commandSpan, object? properties = null) where T : class, new()
+        public static List<T> Query<T>(this IDbConnection connection, string commandString, object? properties = null) where T : class, new()
         {
             connection.OpenIfNotOpen();
             using var command = connection.CreateCommand();
-            command.CommandText = ParameterHandler.PopulateParams(commandSpan, properties);
+            command.CommandText = ParameterHandler.PopulateParams(commandString, properties);
             using var reader = command.ExecuteReader();
             List<T> list = new();
             while (reader.Read())
@@ -108,11 +108,11 @@ namespace UskokDB
             return list;
         }
 
-        public static T? QuerySingle<T>(this IDbConnection connection, ReadOnlySpan<char> commandSpan, object? properties = null) where T : class, new()
+        public static T? QuerySingle<T>(this IDbConnection connection, string commandString, object? properties = null) where T : class, new()
         {
             connection.OpenIfNotOpen();
             using var command = connection.CreateCommand();
-            command.CommandText = ParameterHandler.PopulateParams(commandSpan, properties);
+            command.CommandText = ParameterHandler.PopulateParams(commandString, properties);
             using var reader = command.ExecuteReader();
 
             if (!reader.Read()) return null;
@@ -120,19 +120,19 @@ namespace UskokDB
             return reader.Read<T>();
         }
 
-        public static int Execute(this IDbConnection connection, ReadOnlySpan<char> commandSpan, object? properties = null)
+        public static int Execute(this IDbConnection connection, string commandString, object? properties = null)
         {
             connection.OpenIfNotOpen();
             using var command = connection.CreateCommand();
-            command.CommandText = ParameterHandler.PopulateParams(commandSpan, properties);
+            command.CommandText = ParameterHandler.PopulateParams(commandString, properties);
             return command.ExecuteNonQuery();
         }
 
-        public static T? ExecuteScalar<T>(this IDbConnection connection, string commandStr, object? properties = null)
+        public static T? ExecuteScalar<T>(this IDbConnection connection, string commandString, object? properties = null)
         {
            connection.OpenIfNotOpen();
             using var command = connection.CreateCommand();
-            command.CommandText = ParameterHandler.PopulateParams(commandStr.AsSpan(), properties);
+            command.CommandText = ParameterHandler.PopulateParams(commandString, properties);
             var value = command.ExecuteScalar();
             if (value is null or DBNull) return default;
             return (T)Convert.ChangeType(value, typeof(T));

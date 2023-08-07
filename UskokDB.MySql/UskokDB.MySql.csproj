@@ -10,9 +10,9 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Company>Vuk Uskokovic</Company>
     <Authors>Vuk Uskokovic</Authors>
-    <Version>2.0.1</Version>
+    <Version>2.1.0</Version>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageReleaseNotes>Quick fix for netstandard 2.0</PackageReleaseNotes>
+    <PackageReleaseNotes>Updated readme, removed span&lt;string&gt; as function parameters for unnecessary .AsSpan()</PackageReleaseNotes>
 	  <LangVersion>preview</LangVersion>
 	  <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -26,6 +26,10 @@
 
 	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
 		<PackageReference Include="System.Memory" Version="4.5.5" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\UskokDB\UskokDB.csproj" />
 	</ItemGroup>
 
 </Project>

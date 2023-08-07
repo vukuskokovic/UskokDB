@@ -6,9 +6,6 @@ namespace UskokDB
 {
     public static class ParameterHandler
     {
-        /// <summary>
-        /// When writing/reading a class or struct type 
-        /// </summary>
         public static bool UseJsonForUnknownClassesAndStructs = false;
 
         public static Func<object?, string>? JsonWriter = null;
@@ -33,7 +30,7 @@ namespace UskokDB
             typeof(DateTime)
         };
 
-        public static Dictionary<Type, IParameterConverter> ParameterConverters = new()
+        public static readonly Dictionary<Type, IParameterConverter> ParameterConverters = new()
         {
             [typeof(Guid)] = new DefaultParameterConverter<Guid, string>((guid) => guid.ToString(), Guid.Parse, Guid.Empty.ToString().Length)
         };
@@ -57,7 +54,7 @@ namespace UskokDB
             //all generic types
             if (value is byte or short or ushort or int or uint or long or ulong or bool or float or double or char or decimal)
             {
-                return value.ToString();
+                return value.ToString()!;
             }
 
             if (value is DateTime dateTime)
@@ -102,18 +99,16 @@ namespace UskokDB
                 return parameterConverter.Read(value);
             }
             
-            if (ShouldJsonBeUsedForType(type))
-            {
-                if (JsonReader == null) throw new NullReferenceException("Configured to use json for unknown types and structs but json reader was null");
-                if(value is not string jsonStr) 
-                    throw new Exception($"Error reading type {type.FullName} did not get json string from the database");
-                
-                return JsonReader(jsonStr, type);
-            }
-            
             if (PrimitiveTypes.Contains(type)) return value;
 
-            return value;
+            if (!ShouldJsonBeUsedForType(type)) return value;
+            
+            if (JsonReader == null) throw new NullReferenceException("Configured to use json for unknown types and structs but json reader was null");
+            if(value is not string jsonStr) 
+                throw new Exception($"Error reading type {type.FullName} did not get json string from the database");
+                
+            return JsonReader(jsonStr, type);
+
         }
 
         public static Dictionary<string, string> GetParamsHashmap(object? obj)
@@ -131,9 +126,11 @@ namespace UskokDB
             return values;
         }
 
-        public static string PopulateParams(ReadOnlySpan<char> querySpan, object? paramsObj)
+        public static string PopulateParams(string query, object? paramsObj)
         {
-            if (paramsObj == null) return querySpan.ToString();
+            if (paramsObj == null) return query;
+
+            var querySpan = query.AsSpan();
 
             var paramsHashMap = GetParamsHashmap(paramsObj);
             StringBuilder builder = new();
