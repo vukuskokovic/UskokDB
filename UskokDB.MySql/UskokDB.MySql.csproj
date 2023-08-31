@@ -10,9 +10,9 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Company>Vuk Uskokovic</Company>
     <Authors>Vuk Uskokovic</Authors>
-    <Version>2.1.0</Version>
+    <Version>2.1.1</Version>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageReleaseNotes>Updated readme, removed span&lt;string&gt; as function parameters for unnecessary .AsSpan()</PackageReleaseNotes>
+    <PackageReleaseNotes>Fixed enum types</PackageReleaseNotes>
 	  <LangVersion>preview</LangVersion>
 	  <Nullable>enable</Nullable>
   </PropertyGroup>

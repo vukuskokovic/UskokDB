@@ -12,9 +12,9 @@
 		<PackageTags>db, database, orm, mysql</PackageTags>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<Authors>Vuk Uskokovic</Authors>
-		<Version>2.1.0</Version>
+		<Version>2.1.1</Version>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<PackageReleaseNotes>Updated readme, removed spans as function parameters for unnecessary .AsSpan()</PackageReleaseNotes>
+		<PackageReleaseNotes>Fixed enum types</PackageReleaseNotes>
 		<Description>A c# orm made for simple and fast usage.
 Mainly made to be used with UskokDB.MySql package.</Description>
 	</PropertyGroup>

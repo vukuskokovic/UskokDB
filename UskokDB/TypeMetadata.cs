@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using UskokDB.Attributes;
 
 namespace UskokDB
 {
+    [SuppressMessage("ReSharper", "StaticMemberInGenericType")]
     public static class TypeMetadata<T> where T : class, new()
     {
         static TypeMetadata()
@@ -31,13 +33,16 @@ namespace UskokDB
 
         public TypeMetadataProperty(PropertyInfo propertyInfo)
         {
-            PropertyInfo = propertyInfo;
+            PropertyInfo = propertyInfo;;
             Type = propertyInfo.PropertyType;
             if (propertyInfo.GetCustomAttribute<ColumnAttribute>() is { } columnAttribute)
             {
-                PropertyName = columnAttribute.Name ?? propertyInfo.Name;
+                PropertyName = columnAttribute.Name;
             }
-            else PropertyName = propertyInfo.Name;
+            else
+            {
+                PropertyName = propertyInfo.Name.FirstLetterLowerCase();
+            }
         }
     }
 }

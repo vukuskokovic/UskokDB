@@ -27,7 +27,7 @@ namespace UskokDB.MySql
         {
             var tableType = typeof(T);
             var tableNameAttribute = tableType.GetCustomAttribute<TableNameAttribute>();
-            
+
             TableName = tableNameAttribute?.Name ?? tableType.Name;
             
             var properties = TypeMetadata<T>.Properties;

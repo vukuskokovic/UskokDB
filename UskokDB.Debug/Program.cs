@@ -5,17 +5,31 @@ using UskokDB.Attributes;
 using UskokDB.MySql;
 using UskokDB.MySql.Attributes;
 
-var connection = new MySqlConnection("Server=localhost;User ID=root;Database=test");
-await TestPrimryKey.CreateIfNotExistAsync(connection);
-await TestForeignKEYYYY.CreateIfNotExistAsync(connection);
+ParameterHandler.UseJsonForUnknownClassesAndStructs = true;
+ParameterHandler.JsonReader = (str, type) => str == null ? null : JsonConvert.DeserializeObject(str, type);
+ParameterHandler.JsonWriter = obj => obj == null ? null : JsonConvert.SerializeObject(obj);
 
-public class TestForeignKEYYYY : MySqlTable<TestForeignKEYYYY>
+var connection = new MySqlConnection("Server=localhost;User ID=root;Database=test");
+await TestEnum.CreateIfNotExistAsync(connection);
+await TestEnum.InsertAsync(connection, new TestEnum()
 {
-    [ForeignKey<TestPrimryKey>]
-    public int Test { get; set; }
+    Test = TestEnumType.Test,
+    TestPest = TestEnumType.Test2
+});
+
+var all = await connection.QueryAsync<TestEnum>("SELECT * FROM testenum");
+
+Console.WriteLine(JsonConvert.SerializeObject(all));
+
+public class TestEnum : MySqlTable<TestEnum>
+{
+    public TestEnumType Test { get; set; }
+    public TestEnumType TestPest { get; set; }
 }
 
-public class TestPrimryKey : MySqlTable<TestPrimryKey>
+public enum TestEnumType
 {
-    [Key] public int Test { get; set; }
+    Test,
+    Test1,
+    Test2
 }

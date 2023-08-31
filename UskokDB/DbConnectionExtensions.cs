@@ -8,14 +8,8 @@ namespace UskokDB
 {
     public static class DbConnectionExtensions
     {
-        private static Task OpenIfNotOpen(this DbConnection dbConnection)
-        {
-            if(dbConnection.State != ConnectionState.Open)
-            {
-                return dbConnection.OpenAsync();
-            }
-            return Task.CompletedTask;
-        }
+        private static Task OpenIfNotOpen(this DbConnection dbConnection) => 
+            dbConnection.State != ConnectionState.Open ? dbConnection.OpenAsync() : Task.CompletedTask;
 
         public static async Task<List<dynamic>> QueryAsync(this DbConnection connection, string commandStr, object? properties = null)
         {

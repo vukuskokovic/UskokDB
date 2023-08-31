@@ -8,7 +8,7 @@ namespace UskokDB
     {
         public static bool UseJsonForUnknownClassesAndStructs = false;
 
-        public static Func<object?, string>? JsonWriter = null;
+        public static Func<object?, string?>? JsonWriter = null;
         public static Func<string?, Type, object?>? JsonReader = null;
 
 
@@ -37,7 +37,7 @@ namespace UskokDB
 
         public static bool ShouldJsonBeUsedForType(Type type)
         {
-            return UseJsonForUnknownClassesAndStructs && (type.IsClass || type.IsArray || type.IsValueType);
+            return UseJsonForUnknownClassesAndStructs && (type.IsClass || type.IsArray || type.IsValueType || type.IsEnum);
         }
 
         private const string NullValue = "NULL";
@@ -98,9 +98,11 @@ namespace UskokDB
             {
                 return parameterConverter.Read(value);
             }
-            
+
             if (PrimitiveTypes.Contains(type)) return value;
 
+            if (type.IsEnum) return value;
+            
             if (!ShouldJsonBeUsedForType(type)) return value;
             
             if (JsonReader == null) throw new NullReferenceException("Configured to use json for unknown types and structs but json reader was null");
