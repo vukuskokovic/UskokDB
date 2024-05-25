@@ -1,16 +1,10 @@
 using UskokDB.MySql;
 using UskokDB.MySql.Attributes;
 
-[TableName("shop")]
-public class Shop : MySqlTable<Shop>
+[TableName("test")]
+public class Person : MySqlTable<Person>
 {
-    public int Test {get;set;}
-    public double Test1 {get;set;}
-}
-
-[TableName("shop1")]
-public class Shop1 : MySqlTable<Shop1>
-{
-    public int Test {get;set;}
-    public double Test1 {get;set;}
+    public int Age {get;set;}
+    public string Name { get; set; }
+    public int Height { get; set; }
 }

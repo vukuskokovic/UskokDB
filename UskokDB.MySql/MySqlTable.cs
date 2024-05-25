@@ -78,16 +78,8 @@ namespace UskokDB.MySql
             {
                 attributes.Add("AUTO_INCREMENT");
             }
-            
-            var foreignKeyAttribute = property.PropertyInfo.GetCustomAttributes(true).FirstOrDefault(attribute =>
-            {
-                var attributeType = attribute.GetType();
-                return attributeType.IsGenericType;
-            })?.GetType();
-
-            if (foreignKeyAttribute != null)
-            {
-                var tableType = foreignKeyAttribute.GenericTypeArguments[0];
+            //IF property is foreignkey
+            if(PropertyUtil.GetPropertyForeignKey(property) is Type tableType){
                 const BindingFlags bindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.FlattenHierarchy;
                 var primaryKeyObj = tableType.GetProperty(nameof(PrimaryKey), bindingFlags)?.GetValue(null);
                 if (primaryKeyObj is not TypeMetadataProperty primaryKeyMetaData)
@@ -140,6 +132,8 @@ namespace UskokDB.MySql
             [typeof(char)] = "CHAR",
             [typeof(DateTime)] = "DATETIME"
         };
+
+        
 
         private static string GetTypeTableType(Type type, int? maxLength, string? customTypeName = null)
         {
@@ -278,5 +272,7 @@ namespace UskokDB.MySql
             connection.Query<T>(GetByKeysSqlString(values));
         public static Task<List<T>> GetByKeysAsync<TValue>(DbConnection connection, IEnumerable<TValue> values) =>
             connection.QueryAsync<T>(GetByKeysSqlString(values));
+
+        public static FilterBuilder CreateFilterBuilder(string type = "AND") => new(TableName, type);
     }
 }

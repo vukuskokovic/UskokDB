@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net7.0;net6.0;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>net7.0;net6.0;netstandard2.0;net8.0</TargetFrameworks>
     <Title>Mysql extension for UskokDB</Title>
     <Description>MySql helper for UskokDB</Description>
     <PackageProjectUrl>https://github.com/vukuskokovic/UskokDB</PackageProjectUrl>
@@ -10,7 +10,7 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Company>Vuk Uskokovic</Company>
     <Authors>Vuk Uskokovic</Authors>
-    <Version>2.3.0</Version>
+    <Version>2.4.3</Version>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageReleaseNotes>Added TableInitUtil so now you can creates all tables in the code with a one liner</PackageReleaseNotes>
 	  <LangVersion>preview</LangVersion>
