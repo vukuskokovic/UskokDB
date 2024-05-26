@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -94,32 +96,46 @@ public class FilterBuilder
         return this;
     }
 
-    private void ApplyAfter(StringBuilder builder)
+    private void ApplyAfter(StringBuilder builder, bool ignoreLimitAndOffset)
     {
         if (GroupInfo != null) builder.Append(GroupInfo.ToString());
         if (OrderInfo != null) builder.Append(OrderInfo.ToString());
-        if (Limit != null && Offset != null) builder.Append($"LIMIT {Offset.Value},{Limit.Value}");
-        else if (Limit != null) builder.Append($"LIMIT {Limit.Value}");
-        else if (Offset != null) builder.Append($"OFFSET {Offset.Value}");
+        if (!ignoreLimitAndOffset)
+        {
+            if (Limit != null && Offset != null) builder.Append($"LIMIT {Offset.Value},{Limit.Value}");
+            else if (Limit != null) builder.Append($"LIMIT {Limit.Value}");
+            else if (Offset != null) builder.Append($"OFFSET {Offset.Value}");
+        }
     }
 
-    public override string ToString()
+    private string CreateString(string selector, bool ignoreLimitAndOffset)
     {
-        StringBuilder builder = new("SELECT * FROM ");
+        StringBuilder builder = new("SELECT ");
+        builder.Append(selector);
+        builder.Append(" FROM ");
         builder.Append(TableName);
-        builder.Append(" ");
+        builder.Append(' ');
         if (Filters.Count == 0)
         {
-            ApplyAfter(builder);
+            ApplyAfter(builder, ignoreLimitAndOffset);
             return builder.ToString();
         }
 
         builder.Append("WHERE ");
         builder.Append(string.Join(Type, Filters));
-        builder.Append(" ");
-        ApplyAfter(builder);
+        builder.Append(' ');
+        ApplyAfter(builder, ignoreLimitAndOffset);
         return builder.ToString();
     }
+
+    public override string ToString() => CreateString("*", false);
+    public Task<List<T>> QueryAsync<T>(DbConnection connection) where T : MySqlTable<T>, new() => connection.QueryAsync<T>(ToString());
+    public List<T> Query<T>(IDbConnection connection) where T : MySqlTable<T>, new() => connection.Query<T>(ToString());
+
+    public Task<int> CountAsync(DbConnection connection, bool ignoreLimitAndOffsets = true) => connection.ExecuteScalarAsync<int>(CreateString("COUNT(*)", ignoreLimitAndOffsets));
+    public int Count(IDbConnection connection, bool ignoreLimitAndOffsets = true) => connection.ExecuteScalar<int>(CreateString("COUNT(*)", ignoreLimitAndOffsets));
+
+
 
     private class OrderGroupInfo
     {

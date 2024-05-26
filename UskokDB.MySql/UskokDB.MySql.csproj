@@ -10,7 +10,7 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Company>Vuk Uskokovic</Company>
     <Authors>Vuk Uskokovic</Authors>
-    <Version>2.4.3</Version>
+    <Version>2.4.5</Version>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageReleaseNotes>Added TableInitUtil so now you can creates all tables in the code with a one liner</PackageReleaseNotes>
 	  <LangVersion>preview</LangVersion>
