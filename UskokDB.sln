@@ -7,7 +7,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UskokDB", "UskokDB\UskokDB.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UskokDB.Debug", "UskokDB.Debug\UskokDB.Debug.csproj", "{26CB79B8-8F64-4F86-889A-911A506B5D6E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UskokDB.MySql", "UskokDB.MySql\UskokDB.MySql.csproj", "{CED3C351-FD4A-4246-9530-63125764ADE0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UskokDB.AspNetExtensions", "UskokDB.AspNetExtensions\UskokDB.AspNetExtensions.csproj", "{ED589DF9-37E4-439D-A6C9-96D568081F3D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UskokDB.MySql", "UskokDB.MySql\UskokDB.MySql.csproj", "{449B08CE-D0A3-4EF5-ABDF-A2DD64336974}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -23,10 +25,14 @@ Global
 		{26CB79B8-8F64-4F86-889A-911A506B5D6E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{26CB79B8-8F64-4F86-889A-911A506B5D6E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{26CB79B8-8F64-4F86-889A-911A506B5D6E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{CED3C351-FD4A-4246-9530-63125764ADE0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{CED3C351-FD4A-4246-9530-63125764ADE0}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{CED3C351-FD4A-4246-9530-63125764ADE0}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{CED3C351-FD4A-4246-9530-63125764ADE0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ED589DF9-37E4-439D-A6C9-96D568081F3D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ED589DF9-37E4-439D-A6C9-96D568081F3D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ED589DF9-37E4-439D-A6C9-96D568081F3D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ED589DF9-37E4-439D-A6C9-96D568081F3D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{449B08CE-D0A3-4EF5-ABDF-A2DD64336974}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{449B08CE-D0A3-4EF5-ABDF-A2DD64336974}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{449B08CE-D0A3-4EF5-ABDF-A2DD64336974}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{449B08CE-D0A3-4EF5-ABDF-A2DD64336974}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

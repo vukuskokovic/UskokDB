@@ -11,19 +11,18 @@ using UskokDB.MySql.Attributes;
 
 namespace UskokDB.MySql
 {
-    public interface IMySqlTable
+    public interface IDbTable
     {
     }
 
-    [SuppressMessage("ReSharper", "StaticMemberInGenericType")]
-    public class MySqlTable<T> : IMySqlTable where T : class, new()
+    public class DbTable<T> : IDbTable where T : class, new()
     {
         public static TypeMetadataProperty? PrimaryKey { get; private set; } = null;
         public static string MySqlTableInitString { get; }
         public static string TableName { get; }
         private static readonly List<Tuple<string, string>> ForeignKeys = new();
         private const string Space = " ";
-        static MySqlTable()
+        static DbTable()
         {
             var tableType = typeof(T);
             var tableNameAttribute = tableType.GetCustomAttribute<TableNameAttribute>();

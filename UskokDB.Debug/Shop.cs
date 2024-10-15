@@ -1,8 +1,9 @@
-using UskokDB.MySql;
-using UskokDB.MySql.Attributes;
+
+using UskokDB;
+using UskokDB.Attributes;
 
 [TableName("test")]
-public class Person : MySqlTable<Person>
+public class Person
 {
     public int Age {get;set;}
     public string Name { get; set; }

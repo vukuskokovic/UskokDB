@@ -1,48 +1,49 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using UskokDB.Attributes;
 
-namespace UskokDB
+namespace UskokDB;
+
+public static class TypeMetadata<T> where T : class, new()
 {
-    [SuppressMessage("ReSharper", "StaticMemberInGenericType")]
-    public static class TypeMetadata<T> where T : class, new()
+    static TypeMetadata()
     {
-        static TypeMetadata()
+        Type = typeof(T);
+        var properties = Type.GetProperties();
+        foreach (var property in properties)
         {
-            Type = typeof(T);
-            var properties = Type.GetProperties();
-            foreach (var property in properties)
-            {
-                if (property.GetCustomAttribute<NotMappedAttribute>() is not null) continue;
+            if (property.GetCustomAttribute<NotMappedAttribute>() is not null) continue;
 
-                Properties.Add(new TypeMetadataProperty(property));
-            }
+            var meta = new TypeMetadataProperty(property);
+            NameToPropertyMap[property.Name] = meta;
+            Properties.Add(meta);
         }
-
-        public static Type Type { get; }
-        public static List<TypeMetadataProperty> Properties { get; } = new();
     }
 
-    public class TypeMetadataProperty
-    {
-        public PropertyInfo PropertyInfo { get; }
-        public Type Type { get; }
-        public string PropertyName { get; }
+    public static Type Type { get; }
+    public static List<TypeMetadataProperty> Properties { get; } = new();
+    public static Dictionary<string, TypeMetadataProperty> NameToPropertyMap = [];
+}
 
-        public TypeMetadataProperty(PropertyInfo propertyInfo)
+public class TypeMetadataProperty
+{
+    public PropertyInfo PropertyInfo { get; }
+    public Type Type { get; }
+    public string PropertyName { get; }
+
+    public TypeMetadataProperty(PropertyInfo propertyInfo)
+    {
+        PropertyInfo = propertyInfo;
+        Type = propertyInfo.PropertyType;
+        if (propertyInfo.GetCustomAttribute<ColumnAttribute>() is ColumnAttribute columnAttribute)
         {
-            PropertyInfo = propertyInfo;;
-            Type = propertyInfo.PropertyType;
-            if (propertyInfo.GetCustomAttribute<ColumnAttribute>() is { } columnAttribute)
-            {
-                PropertyName = columnAttribute.Name;
-            }
-            else
-            {
-                PropertyName = propertyInfo.Name.FirstLetterLowerCase();
-            }
+            PropertyName = columnAttribute.Name;
+        }
+        else
+        {
+            PropertyName = propertyInfo.Name.FirstLetterLowerCase();
         }
     }
 }

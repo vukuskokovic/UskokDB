@@ -38,7 +38,7 @@ public static class TableInitUtil
         List<TableItem> tables = [];
         foreach(var type in AppDomain.CurrentDomain.GetAssemblies().SelectMany(x => x.GetTypes())){
             
-            if (type.ContainsGenericParameters || !InheritsTypeFullSearch(type, typeof(MySqlTable<>), out var genericType)) continue;
+            if (type.ContainsGenericParameters || !InheritsTypeFullSearch(type, typeof(DbTable<>), out var genericType)) continue;
             var value = type.GetProperty("MySqlTableInitString", flags)?.GetValue(null);
             if(value is not string tableInit)continue;
             var propertyListValue = typeof(TypeMetadata<>).MakeGenericType(genericType).GetProperty("Properties", flags)?.GetValue(null);
