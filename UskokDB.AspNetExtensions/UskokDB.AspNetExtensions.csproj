@@ -12,6 +12,7 @@
     <PackageTags>uskokdb, db, database, sql</PackageTags>
     <Description>Contains a simple extension that helps adding your DbContext  to the asp.net app</Description>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Version>1.0.1</Version>
   </PropertyGroup>
 
 	<ItemGroup>

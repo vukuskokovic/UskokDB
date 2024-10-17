@@ -4,10 +4,11 @@ using UskokDB;
 using UskokDB.Attributes;
 
 var context = new ShopDbContext();
-var builder = context.TestTable.Where(t => t.Id > 2).OrderByDesc("id");
-Console.WriteLine(builder.CompileQuery());
-var list = await builder.QueryAsync();
-Console.WriteLine(JsonSerializer.Serialize(list));
+await foreach(var item in context.TestTable.Where(x => x.Id == 3).QueryAsyncEnumerable())
+{
+
+}
+Console.WriteLine(context.GetTableCreationString());
 public class ShopDbContext : DbContext
 {
     public DbTable<Test> TestTable { get; }
@@ -22,5 +23,6 @@ public class Test
 {
     [Key]
     public int Id { get; set; }
-    public string Name { get; set; }
+    [MaxLength(20), ColumnNotNull]
+    public string? Name { get; set; }
 }

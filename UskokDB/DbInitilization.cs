@@ -120,7 +120,7 @@ internal static class DbInitilization
         /// t1: columnName, t2: tableName, t3: foreignColumnName
         List<Tuple<string, string, string>> foreignKeys = new();
         var tableName = GetTableName(tableType);
-        List<TypeMetadataProperty> properties = (List<TypeMetadataProperty>)metadataType.MakeGenericType(tableType).GetProperty("Properties", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
+        List<TypeMetadataProperty> properties = (List<TypeMetadataProperty>)metadataType.MakeGenericType(tableType).GetProperty("Properties")!.GetValue(null)!;
         builder.Append("CREATE TABLE IF NOT EXISTS `");
         builder.Append(tableName);
         builder.Append("` ");
@@ -155,10 +155,19 @@ internal static class DbInitilization
         builder.Append(");\n");
     }
 
-    private static void AddPropertyTableType(DbContext context, string tableName, StringBuilder builder, Type type, int? maxLength, string? customTypeName = null)
+    private static void AddPropertyTableType(DbContext context, string tableName, StringBuilder builder, Type type, int? maxLength, out bool addNotNull, string? customTypeName = null)
     {
+        addNotNull = true;
+        var underylingType = Nullable.GetUnderlyingType(type);
+        if (underylingType != null)
+        {
+            addNotNull = false;
+            type = underylingType;
+        }
+
         if (type == typeof(string))
         {
+            addNotNull = false;
             if (customTypeName != null)
             {
                 builder.Append(customTypeName);
@@ -176,9 +185,10 @@ internal static class DbInitilization
             builder.Append("TEXT");
             return;
         }
+
         if (type.IsEnum)
         {
-            AddPropertyTableType(context, tableName, builder, type.GetEnumUnderlyingType(), maxLength);
+            AddPropertyTableType(context, tableName, builder, type.GetEnumUnderlyingType(), maxLength, out addNotNull);
             return;
         }
 
@@ -192,7 +202,7 @@ internal static class DbInitilization
         {
             maxLength = converter.GetCustomMaxLength();
             customTypeName = converter.GetCustomTypeInTable();
-            AddPropertyTableType(context, tableName, builder, converter.GetTableType(), maxLength, customTypeName);
+            AddPropertyTableType(context, tableName, builder, converter.GetTableType(), maxLength, out addNotNull, customTypeName);
             return;
         }
 
@@ -234,7 +244,7 @@ internal static class DbInitilization
         builder.Append(property.PropertyName);
         builder.Append(' ');
 
-        AddPropertyTableType(context, tableName, builder, property.Type, maxLengthAttr?.Length);
+        AddPropertyTableType(context, tableName, builder, property.Type, maxLengthAttr?.Length, out var addNotNull);
         if(autoIncrementAttr != null)
         {
             if(context.DbType == DbType.MySQL)
@@ -248,7 +258,7 @@ internal static class DbInitilization
                 builder.Append(" AUTOINCREMENT");
             }
         }
-        if(notNullAttr != null)
+        if(addNotNull || notNullAttr != null)
             builder.Append(" NOT NULL");
     }
 

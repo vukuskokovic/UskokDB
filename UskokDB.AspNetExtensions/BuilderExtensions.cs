@@ -5,9 +5,9 @@ namespace UskokDB.AspNetExtensions;
 
 public static class BuilderExtensions
 {
-    public static void AddDbContext<T>(this WebApplicationBuilder builder, Func<IServiceProvider, T> dbContextFactory) where T : DbContext
+    public static void AddDbContext<T>(this IServiceCollection services, Func<IServiceProvider, T> dbContextFactory) where T : DbContext
     {
-        builder.Services.AddTransient(dbContextFactory);
+        services.AddTransient(dbContextFactory);
     }
 
 }

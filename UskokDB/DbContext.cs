@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -54,6 +55,18 @@ public abstract class DbContext : IDisposable, IAsyncDisposable
         command.CommandText = DbIO.PopulateParams(commandString, properties);
         return command;
     }
+
+    public IAsyncEnumerable<T> QueryAsyncEnumrable<T>(string commandString, object? properties = null) where T : class, new() => QueryAsyncEnumrable<T>(commandString, properties, CancellationToken.None);
+    public async IAsyncEnumerable<T> QueryAsyncEnumrable<T>(string commandString, object? properties, [EnumeratorCancellation]CancellationToken token) where T : class, new()
+    {
+        await using var command = await CreateCommand(commandString, properties, token);
+        await using var reader = await command.ExecuteReaderAsync(token);
+        while(await reader.ReadAsync(token))
+        {
+            yield return DbIO.Read<T>(reader);
+        }
+    }
+
 
     public Task<List<T>> QueryAsync<T>(string commandString, object? properties = null) where T : class, new() => QueryAsync<T>(commandString, properties, CancellationToken.None);
     public async Task<List<T>> QueryAsync<T>(string commandString, object? properties, CancellationToken token) where T : class, new()

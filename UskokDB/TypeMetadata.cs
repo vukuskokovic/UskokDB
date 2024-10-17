@@ -23,8 +23,8 @@ public static class TypeMetadata<T> where T : class, new()
     }
 
     public static Type Type { get; }
-    public static List<TypeMetadataProperty> Properties { get; } = new();
-    public static Dictionary<string, TypeMetadataProperty> NameToPropertyMap = [];
+    public static List<TypeMetadataProperty> Properties { get; } = [];
+    public static Dictionary<string, TypeMetadataProperty> NameToPropertyMap { get; } = [];
 }
 
 public class TypeMetadataProperty

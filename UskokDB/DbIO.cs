@@ -22,20 +22,32 @@ public class DbIO(DbContext dbContext)
 {
     private static readonly HashSet<Type> PrimitiveTypes = [
         typeof(char),
+        typeof(char?),
         typeof(byte),
+        typeof(byte?),
         typeof(int),
+        typeof(int?),
         typeof(uint),
+        typeof(uint?),
         typeof(short),
+        typeof(short?),
         typeof(ushort),
+        typeof(ushort?),
         typeof(long),
+        typeof(long?),
         typeof(ulong),
+        typeof(ulong?),
         typeof(double),
+        typeof(double?),
         typeof(float),
+        typeof(float?),
         typeof(bool),
-        typeof(char),
+        typeof(bool?),
         typeof(string),
         typeof(decimal),
-        typeof(DateTime)
+        typeof(decimal?),
+        typeof(DateTime),
+        typeof(DateTime?),
     ];
 
     public bool ShouldJsonBeUsedForType(Type type)
