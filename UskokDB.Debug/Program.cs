@@ -4,11 +4,11 @@ using UskokDB;
 using UskokDB.Attributes;
 
 var context = new ShopDbContext();
-await foreach(var item in context.TestTable.Where(x => x.Id == 3).QueryAsyncEnumerable())
+await context.TestTable.InsertAsync(new Test()
 {
-
-}
-Console.WriteLine(context.GetTableCreationString());
+    Id = 1,
+    Name = "test"
+});
 public class ShopDbContext : DbContext
 {
     public DbTable<Test> TestTable { get; }

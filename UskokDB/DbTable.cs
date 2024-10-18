@@ -24,7 +24,11 @@ public class DbTable<T>(DbContext context) where T : class, new()
         }
     }
 
-    public Task InsertAsync(params T[] items) => InsertAsync(items);
+    public Task InsertAsync(params T[] items)
+    {
+        string cmd = GetInsertString(items);
+        return DbContext.ExecuteAsync(cmd);
+    }
     public Task InsertAsync(IEnumerable<T> items)
     {
         string cmd = GetInsertString(items);
