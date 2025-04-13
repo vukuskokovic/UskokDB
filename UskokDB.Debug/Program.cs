@@ -5,9 +5,8 @@ using UskokDB.Attributes;
 
 var context = new ShopDbContext();
 
-TestRecord rec = new TestRecord(new TestBranch("312"));
-string kurac = "312";
-Console.WriteLine(context.TestTable.Where(x => x.Name == kurac || x.Name == rec.Branch.Test || x.Name == null).CompileQuery());
+Console.WriteLine(await context.TestTable.DeleteAsync(null));
+
 
 public class ShopDbContext : DbContext
 {
@@ -23,7 +22,7 @@ public class Test
 {
     [Key]
     public int Id { get; set; }
-    [MaxLength(20), ColumnNotNull]
+    [MaxLength(20), ColumnNotNull, Column("Name")]
     public string? Name { get; set; }
 }
 

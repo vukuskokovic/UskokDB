@@ -15,7 +15,7 @@ public static class LinqToSql
         return CompileExpression<T>(context, expression.Body);
     }
 
-    private static string CompileExpression<T>(DbContext context, Expression expression) where T : class, new()
+    internal static string CompileExpression<T>(DbContext context, Expression expression) where T : class, new()
     {
         if(expression is BinaryExpression binaryExpression)
         {
