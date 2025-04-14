@@ -1,11 +1,19 @@
 ﻿using MySqlConnector;
 using System.Text.Json;
+using pikac;
 using UskokDB;
 using UskokDB.Attributes;
 
 var context = new ShopDbContext();
-
-Console.WriteLine(await context.TestTable.DeleteAsync(null));
+await context.ExecuteAsync(context.GetTableCreationString());
+var doesExist = await context.TestTable.ExistsAsync(r => r.Id == "testId");
+Console.WriteLine(doesExist);
+await context.TestTable.InsertAsync(new Test(){
+    Id = "testId"
+});
+doesExist = await context.TestTable.ExistsAsync(r => r.Id == "testId");
+Console.WriteLine(doesExist);
+Console.WriteLine("Test");
 
 
 public class ShopDbContext : DbContext
@@ -17,18 +25,9 @@ public class ShopDbContext : DbContext
     }
 }
 
-[TableName("test")]
+[TableNameAttribute("testTable")]
 public class Test
 {
-    [Key]
-    public int Id { get; set; }
-    [MaxLength(20), ColumnNotNull, Column("Name")]
-    public string? Name { get; set; }
-}
-
-public record TestBranch(string Test);
-public record TestRecord(TestBranch Branch);
-public class TestStatic
-{
-    public static string Kurac = "KURAC";
+    [Key, MaxLength(10)]
+    public string Id {get;set;} = null!;
 }

@@ -29,6 +29,11 @@ public sealed class ForeignKeyAttribute<T>(string columnName) : Attribute where 
     public string ColumnName { get; } = columnName;
 }
 
+[AttributeUsage(AttributeTargets.Property)]
+public sealed class UniqueAttribute : Attribute
+{
+}
+
 [AttributeUsage(AttributeTargets.Class)]
 public sealed class TableNameAttribute(string name) : Attribute
 {

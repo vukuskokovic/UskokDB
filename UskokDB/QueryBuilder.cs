@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace UskokDB;
@@ -12,9 +13,9 @@ public class QueryBuilder<T>(DbTable<T> table) where T : class, new()
     private string? groupByClause = null;
     private string? limitClause = null;
 
-    public Task<List<T>> QueryAsync() => table.DbContext.QueryAsync<T>(CompileQuery());
-    public IAsyncEnumerable<T> QueryAsyncEnumerable() => table.DbContext.QueryAsyncEnumrable<T>(CompileQuery());
-    public Task<T?> QuerySingleAsync() => table.DbContext.QuerySingleAsync<T>(limitClause == null? Limit(1).CompileQuery() : CompileQuery());
+    public Task<List<T>> QueryAsync(CancellationToken? cancellationToken = null) => table.DbContext.QueryAsync<T>(CompileQuery(), null, cancellationToken ?? CancellationToken.None);
+    public IAsyncEnumerable<T> QueryAsyncEnumerable(CancellationToken? cancellationToken = null) => table.DbContext.QueryAsyncEnumrable<T>(CompileQuery(), null, cancellationToken ?? CancellationToken.None);
+    public Task<T?> QuerySingleAsync(CancellationToken? cancellationToken = null) => table.DbContext.QuerySingleAsync<T>(limitClause == null? Limit(1).CompileQuery() : CompileQuery(), null, cancellationToken ?? CancellationToken.None);
 
     public QueryBuilder<T> Where(Expression<Func<T, bool>> expression)
     {

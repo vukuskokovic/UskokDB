@@ -97,7 +97,7 @@ public static class LinqToSql
             else
             {
                 // Instance field - Extract instance first
-                object instance = GetInstanceObject(memberExp.Expression);
+                object instance = GetInstanceObject(memberExp.Expression)!;
                 return fieldInfo.GetValue(instance);
             }
         }

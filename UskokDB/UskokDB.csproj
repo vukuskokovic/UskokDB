@@ -1,6 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFrameworks>net7.0;net6.0;net8.0</TargetFrameworks>
 		<Nullable>enable</Nullable>
 		<LangVersion>preview</LangVersion>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
@@ -12,11 +11,12 @@
 		<PackageTags>db, database, orm, mysql</PackageTags>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<Authors>Vuk Uskokovic</Authors>
-		<Version>3.2.0</Version>
+		<Version>3.3.0</Version>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<PackageReleaseNotes>Added Delete and Update to db tables</PackageReleaseNotes>
+		<PackageReleaseNotes>Added ExistsAsync function to abstract queries to just check if a row exists</PackageReleaseNotes>
 		<Description>A c# orm made for simple and fast usage.
 Mainly made to be used with UskokDB.MySql package.</Description>
+		<TargetFrameworks>net9.0;net8.0</TargetFrameworks>
 	</PropertyGroup>
 	<ItemGroup>
 	
@@ -24,11 +24,5 @@ Mainly made to be used with UskokDB.MySql package.</Description>
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>
-	</ItemGroup>
-	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-		<PackageReference Include="System.Dynamic.Runtime" Version="4.3.0" />
-		<PackageReference Include="System.Memory" Version="4.5.5" />
-		<PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
-		
 	</ItemGroup>
 </Project>

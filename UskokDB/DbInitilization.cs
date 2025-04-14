@@ -117,7 +117,7 @@ internal static class DbInitilization
     private static void AddTableString(DbContext context, StringBuilder builder, Type tableType)
     {
         List<string> primaryKeys = new();
-        /// t1: columnName, t2: tableName, t3: foreignColumnName
+        // t1: columnName, t2: tableName, t3: foreignColumnName
         List<Tuple<string, string, string>> foreignKeys = new();
         var tableName = GetTableName(tableType);
         List<TypeMetadataProperty> properties = (List<TypeMetadataProperty>)metadataType.MakeGenericType(tableType).GetProperty("Properties")!.GetValue(null)!;
@@ -221,14 +221,16 @@ internal static class DbInitilization
         isPrimaryKey = false;
         var propertyInfo = property.PropertyInfo;
         MaxLengthAttribute? maxLengthAttr = null;
-        AutoIncrementAttribute? autoIncrementAttr = null;
-        ColumnNotNullAttribute? notNullAttr = null;
+        bool isAutoIncrement = false;
+        bool isUnique = false;
+        bool isNotNull = false;
         foreach(var attr in propertyInfo.GetCustomAttributes())
         {
             if (attr is MaxLengthAttribute max) maxLengthAttr = max;
-            else if (attr is AutoIncrementAttribute aI) autoIncrementAttr = aI;
+            else if (attr is AutoIncrementAttribute) isAutoIncrement = true;
             else if (attr is KeyAttribute) isPrimaryKey = true;
-            else if (attr is ColumnNotNullAttribute nN) notNullAttr = nN;
+            else if (attr is ColumnNotNullAttribute) isNotNull = true;
+            else if (attr is UniqueAttribute) isUnique = true;
             else
             {
                 var type = attr.GetType();   
@@ -245,7 +247,7 @@ internal static class DbInitilization
         builder.Append(' ');
 
         AddPropertyTableType(context, tableName, builder, property.Type, maxLengthAttr?.Length, out var addNotNull);
-        if(autoIncrementAttr != null)
+        if(isAutoIncrement)
         {
             if(context.DbType == DbType.MySQL)
                 builder.Append(" AUTO_INCREMENT");
@@ -258,7 +260,10 @@ internal static class DbInitilization
                 builder.Append(" AUTOINCREMENT");
             }
         }
-        if(addNotNull || notNullAttr != null)
+        else if(isUnique){
+            builder.Append(" UNIQUE");
+        }
+        if(addNotNull || isNotNull)
             builder.Append(" NOT NULL");
     }
 

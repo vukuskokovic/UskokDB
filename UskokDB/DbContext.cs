@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
-using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -46,66 +45,62 @@ public abstract class DbContext : IDisposable, IAsyncDisposable
     private List<Type> TablesToCreate { get; } = [];
     protected void AddTableForCreation<T>() where T : class => TablesToCreate.Add(typeof(T));
 
-    internal async Task<DbCommand> CreateCommand(string commandString, object? properties, CancellationToken token)
+    internal async Task<DbCommand> CreateCommand(string commandString, object? properties, CancellationToken? cancellationToken = null)
     {
+        var finalCancToken = cancellationToken ?? CancellationToken.None;
         if (DbConnection.State != ConnectionState.Open)
-            await DbConnection.OpenAsync(token);
+            await DbConnection.OpenAsync(finalCancToken);
 
         var command = DbConnection.CreateCommand();
         command.CommandText = DbIO.PopulateParams(commandString, properties);
         return command;
     }
 
-    public IAsyncEnumerable<T> QueryAsyncEnumrable<T>(string commandString, object? properties = null) where T : class, new() => QueryAsyncEnumrable<T>(commandString, properties, CancellationToken.None);
-    public async IAsyncEnumerable<T> QueryAsyncEnumrable<T>(string commandString, object? properties, [EnumeratorCancellation]CancellationToken token) where T : class, new()
+    public async IAsyncEnumerable<T> QueryAsyncEnumrable<T>(string commandString, object? properties, [EnumeratorCancellation]CancellationToken cancellationToken) where T : class, new()
     {
-        await using var command = await CreateCommand(commandString, properties, token);
-        await using var reader = await command.ExecuteReaderAsync(token);
-        while(await reader.ReadAsync(token))
+        await using var command = await CreateCommand(commandString, properties, cancellationToken);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while(await reader.ReadAsync(cancellationToken))
         {
             yield return DbIO.Read<T>(reader);
         }
     }
-
-
-    public Task<List<T>> QueryAsync<T>(string commandString, object? properties = null) where T : class, new() => QueryAsync<T>(commandString, properties, CancellationToken.None);
-    public async Task<List<T>> QueryAsync<T>(string commandString, object? properties, CancellationToken token) where T : class, new()
+    public async Task<List<T>> QueryAsync<T>(string commandString, object? properties = null, CancellationToken? cancellationToken = null) where T : class, new()
     {
-        await using var command = await CreateCommand(commandString, properties, token);
-        await using var reader = await command.ExecuteReaderAsync(token);
+        var finalCancToken = cancellationToken ?? CancellationToken.None;
+        await using var command = await CreateCommand(commandString, properties, finalCancToken);
+        await using var reader = await command.ExecuteReaderAsync(finalCancToken);
         List<T> list = [];
-        while (await reader.ReadAsync(token))
+        while (await reader.ReadAsync(finalCancToken))
         {
             list.Add(DbIO.Read<T>(reader));
         }
 
         return list;
     }
-    public Task<T?> QuerySingleAsync<T>(string commandString, object? properties = null) where T : class, new() => QuerySingleAsync<T>(commandString, properties, CancellationToken.None);
-    public async Task<T?> QuerySingleAsync<T>(string commandString, object? properties, CancellationToken token) where T : class, new()
+    public async Task<T?> QuerySingleAsync<T>(string commandString, object? properties = null, CancellationToken? cancellationToken = null) where T : class, new()
     {
-        await using var command = await CreateCommand(commandString, properties, token);
-        await using var reader = await command.ExecuteReaderAsync(token);
-        if (!reader.HasRows || !await reader.ReadAsync(token)) return null;
+        var finalCancToken = cancellationToken ?? CancellationToken.None;
+        await using var command = await CreateCommand(commandString, properties, finalCancToken);
+        await using var reader = await command.ExecuteReaderAsync(finalCancToken);
+        if (!reader.HasRows || !await reader.ReadAsync(finalCancToken)) return null;
 
         return DbIO.Read<T>(reader);
     }
-
-    public Task<T?> ExecuteScalar<T>(string commandString, object? properties = null) => ExecuteScalar<T>(commandString, properties, CancellationToken.None);
-    public async Task<T?> ExecuteScalar<T>(string commandString, object? properties, CancellationToken token)
+    public async Task<T?> ExecuteScalar<T>(string commandString, object? properties = null, CancellationToken? cancellationToken = null)
     {
-        await using var command = await CreateCommand(commandString, properties, token);
-        var result = await command.ExecuteScalarAsync(token);
+        var finalCancToken = cancellationToken ?? CancellationToken.None;
+        await using var command = await CreateCommand(commandString, properties, finalCancToken);
+        var result = await command.ExecuteScalarAsync(finalCancToken);
         if (result is null or DBNull) return default;
         var readValue = DbIO.ReadValue(result, typeof(T))!;
         return (T)Convert.ChangeType(readValue, typeof(T));
     }
-
-    public Task<int> ExecuteAsync(string commandString, object? properties = null) => ExecuteAsync(commandString, properties, CancellationToken.None);
-    public async Task<int> ExecuteAsync(string commandString, object? properties, CancellationToken token)
+    public async Task<int> ExecuteAsync(string commandString, object? properties = null, CancellationToken? cancellationToken = null)
     {
-        await using var command = await CreateCommand(commandString, properties, token);
-        return await command.ExecuteNonQueryAsync(token);
+        var finalCancToken = cancellationToken ?? CancellationToken.None;
+        await using var command = await CreateCommand(commandString, properties, finalCancToken);
+        return await command.ExecuteNonQueryAsync(finalCancToken);
     }
 
     public ValueTask DisposeAsync() => DbConnection.DisposeAsync();

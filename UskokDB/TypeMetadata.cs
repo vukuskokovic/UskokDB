@@ -36,7 +36,7 @@ public class TypeMetadataProperty
     {
         PropertyInfo = propertyInfo;
         Type = propertyInfo.PropertyType;
-        if (propertyInfo.GetCustomAttribute<ColumnAttribute>() is ColumnAttribute columnAttribute)
+        if (propertyInfo.GetCustomAttribute<ColumnAttribute>() is {} columnAttribute)
         {
             PropertyName = columnAttribute.Name;
         }
