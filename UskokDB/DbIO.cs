@@ -8,9 +8,15 @@ namespace UskokDB;
 
 public class DbIOOptions
 {
-    public Func<object?, string?> JsonWriter { get; init; } = (value) => value == null? null : System.Text.Json.JsonSerializer.Serialize(value);
-    public Func<string?, Type, object?> JsonReader { get; init; } = (jsonStr, type) => jsonStr == null? null : System.Text.Json.JsonSerializer.Deserialize(jsonStr, type);
-    public bool UseJsonForUnknownClassesAndStructs { get; init; } = false;
+    #if !NETSTANDARD2_0
+    public Func<object?, string?> JsonWriter { get; set; } = (value) => value == null? null : System.Text.Json.JsonSerializer.Serialize(value);
+    public Func<string?, Type, object?> JsonReader { get; set; } = (jsonStr, type) => jsonStr == null? null : System.Text.Json.JsonSerializer.Deserialize(jsonStr, type);
+    #else
+    public Func<object?, string?>? JsonWriter { get; set; } = null;
+    public Func<string?, Type, object?>? JsonReader { get; set; } = null;
+    #endif
+    
+    public bool UseJsonForUnknownClassesAndStructs { get; set; } = false;
     public Dictionary<Type, IParameterConverter> ParameterConverters { get; } = new()
     {
         [typeof(Guid)] = new DefaultParameterConverter<Guid, string>((guid) => guid.ToString(), Guid.Parse, Guid.Empty.ToString().Length),
@@ -144,20 +150,22 @@ public class DbIO(DbContext dbContext)
 
         return values;
     }
-
+    
     public string PopulateParams(string query, object? paramsObj)
     {
         if (paramsObj == null) return query;
 
+        #if !NETSTANDARD2_0
         var querySpan = query.AsSpan();
-
+        #endif
+        
         var paramsHashMap = GetParamsHashmap(paramsObj);
         StringBuilder builder = new();
         var startCursor = 0;
         var readingParam = false;
-        for (var cursor = startCursor; cursor <= querySpan.Length; cursor++)
+        for (var cursor = startCursor; cursor <= query.Length; cursor++)
         {
-            var isEnd = cursor == querySpan.Length;
+            var isEnd = cursor == query.Length;
             if (isEnd)
             {
                 if (!readingParam)
@@ -166,12 +174,19 @@ public class DbIO(DbContext dbContext)
                 }
                 goto WriteParam;
             }
-            if (querySpan[cursor] == '@')
+            #if !NETSTANDARD2_0
+            char currentChar = querySpan[cursor];
+            #else
+            char currentChar = query[cursor];
+            #endif
+            
+            if (currentChar == '@')
             {
                 readingParam = true;
                 goto WriteCurrent;
             }
-            if (readingParam && !char.IsLetter(querySpan[cursor]) && !char.IsDigit(querySpan[cursor]) && querySpan[cursor] != '_')
+            
+            if (readingParam && !char.IsLetter(currentChar) && !char.IsDigit(currentChar) && currentChar != '_')
             {
                 readingParam = false;
                 goto WriteParam;
@@ -182,14 +197,25 @@ public class DbIO(DbContext dbContext)
         WriteCurrent:
             //Ignore if on current character
             if (startCursor == cursor) continue;
-            builder.Append(querySpan.Slice(startCursor, cursor - startCursor).ToArray());
+            
+            #if !NETSTANDARD2_0
+            builder.Append(querySpan.Slice(startCursor, cursor - startCursor));
+            #else
+            builder.Append(query.Substring(startCursor, cursor - startCursor));
+            #endif
             startCursor = cursor;
             continue;
 
         //Write the parameter
         WriteParam:
             //Ignore the first character since it is going to be an '@'
+            
+            #if !NETSTANDARD2_0
             var paramName = querySpan.Slice(startCursor + 1, cursor - startCursor - 1).ToString();
+            #else
+            var paramName = query.Substring(startCursor + 1, cursor - startCursor - 1);
+            #endif
+            
             if (!paramsHashMap.TryGetValue(paramName, out var paramValue)) paramValue = NullValue;
 
             startCursor = cursor;

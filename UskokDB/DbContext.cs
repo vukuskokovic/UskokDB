@@ -17,7 +17,10 @@ public enum DbType
 
 public delegate DbConnection DbConnectionFactory();
 
-public abstract class DbContext : IDisposable, IAsyncDisposable
+public abstract class DbContext : IDisposable
+#if !NETSTANDARD2_0
+,IAsyncDisposable
+#endif
 {
     private static DbIOOptions? _defaultOptions;
     public DbContext(DbType type, DbConnectionFactory connectionFactory, DbIOOptions? ioOptions = null)
@@ -36,7 +39,7 @@ public abstract class DbContext : IDisposable, IAsyncDisposable
 
     public string GetTableCreationString()
     {
-        return DbInitilization.CreateDbString(this);
+        return DbInitialization.CreateDbString(this);
     }
     public DbIOOptions DbIOOptions { get; }
     public DbIO DbIO { get; }
@@ -56,7 +59,8 @@ public abstract class DbContext : IDisposable, IAsyncDisposable
         return command;
     }
 
-    public async IAsyncEnumerable<T> QueryAsyncEnumrable<T>(string commandString, object? properties, [EnumeratorCancellation]CancellationToken cancellationToken) where T : class, new()
+    #if !NETSTANDARD2_0
+    public async IAsyncEnumerable<T> QueryAsyncEnumerable<T>(string commandString, object? properties, [EnumeratorCancellation]CancellationToken cancellationToken) where T : class, new()
     {
         await using var command = await CreateCommand(commandString, properties, cancellationToken);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
@@ -65,11 +69,20 @@ public abstract class DbContext : IDisposable, IAsyncDisposable
             yield return DbIO.Read<T>(reader);
         }
     }
+    #endif
     public async Task<List<T>> QueryAsync<T>(string commandString, object? properties = null, CancellationToken? cancellationToken = null) where T : class, new()
     {
         var finalCancToken = cancellationToken ?? CancellationToken.None;
-        await using var command = await CreateCommand(commandString, properties, finalCancToken);
-        await using var reader = await command.ExecuteReaderAsync(finalCancToken);
+        #if !NETSTANDARD2_0
+        await 
+        #endif
+        using var command = await CreateCommand(commandString, properties, finalCancToken);
+        
+        #if !NETSTANDARD2_0
+        await 
+        #endif
+        using var reader = await command.ExecuteReaderAsync(finalCancToken);
+        
         List<T> list = [];
         while (await reader.ReadAsync(finalCancToken))
         {
@@ -81,8 +94,16 @@ public abstract class DbContext : IDisposable, IAsyncDisposable
     public async Task<T?> QuerySingleAsync<T>(string commandString, object? properties = null, CancellationToken? cancellationToken = null) where T : class, new()
     {
         var finalCancToken = cancellationToken ?? CancellationToken.None;
-        await using var command = await CreateCommand(commandString, properties, finalCancToken);
-        await using var reader = await command.ExecuteReaderAsync(finalCancToken);
+        
+        #if !NETSTANDARD2_0
+        await 
+        #endif
+        using var command = await CreateCommand(commandString, properties, finalCancToken);
+        
+        #if !NETSTANDARD2_0
+        await 
+        #endif
+        using var reader = await command.ExecuteReaderAsync(finalCancToken);
         if (!reader.HasRows || !await reader.ReadAsync(finalCancToken)) return null;
 
         return DbIO.Read<T>(reader);
@@ -90,7 +111,12 @@ public abstract class DbContext : IDisposable, IAsyncDisposable
     public async Task<T?> ExecuteScalar<T>(string commandString, object? properties = null, CancellationToken? cancellationToken = null)
     {
         var finalCancToken = cancellationToken ?? CancellationToken.None;
-        await using var command = await CreateCommand(commandString, properties, finalCancToken);
+        
+        #if !NETSTANDARD2_0
+        await
+        #endif
+        using var command = await CreateCommand(commandString, properties, finalCancToken);
+        
         var result = await command.ExecuteScalarAsync(finalCancToken);
         if (result is null or DBNull) return default;
         var readValue = DbIO.ReadValue(result, typeof(T))!;
@@ -99,10 +125,16 @@ public abstract class DbContext : IDisposable, IAsyncDisposable
     public async Task<int> ExecuteAsync(string commandString, object? properties = null, CancellationToken? cancellationToken = null)
     {
         var finalCancToken = cancellationToken ?? CancellationToken.None;
+        #if NETSTANDARD2_0
+        using var command = await CreateCommand(commandString, properties, finalCancToken);
+        #else
         await using var command = await CreateCommand(commandString, properties, finalCancToken);
+        #endif
         return await command.ExecuteNonQueryAsync(finalCancToken);
     }
 
+    #if !NETSTANDARD2_0
     public ValueTask DisposeAsync() => DbConnection.DisposeAsync();
+    #endif
     public void Dispose() => DbConnection.Dispose();
 }

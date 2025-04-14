@@ -8,13 +8,15 @@ namespace UskokDB;
 
 public class QueryBuilder<T>(DbTable<T> table) where T : class, new()
 {
-    private string? whereClause = null;
-    private string? orderByClause = null;
-    private string? groupByClause = null;
-    private string? limitClause = null;
+    private string? whereClause;
+    private string? orderByClause;
+    private string? groupByClause;
+    private string? limitClause;
 
     public Task<List<T>> QueryAsync(CancellationToken? cancellationToken = null) => table.DbContext.QueryAsync<T>(CompileQuery(), null, cancellationToken ?? CancellationToken.None);
-    public IAsyncEnumerable<T> QueryAsyncEnumerable(CancellationToken? cancellationToken = null) => table.DbContext.QueryAsyncEnumrable<T>(CompileQuery(), null, cancellationToken ?? CancellationToken.None);
+    #if !NETSTANDARD2_0
+    public IAsyncEnumerable<T> QueryAsyncEnumerable(CancellationToken? cancellationToken = null) => table.DbContext.QueryAsyncEnumerable<T>(CompileQuery(), null, cancellationToken ?? CancellationToken.None);
+    #endif
     public Task<T?> QuerySingleAsync(CancellationToken? cancellationToken = null) => table.DbContext.QuerySingleAsync<T>(limitClause == null? Limit(1).CompileQuery() : CompileQuery(), null, cancellationToken ?? CancellationToken.None);
 
     public QueryBuilder<T> Where(Expression<Func<T, bool>> expression)
@@ -31,13 +33,13 @@ public class QueryBuilder<T>(DbTable<T> table) where T : class, new()
 
     public QueryBuilder<T> OrderBy(params string[] columns)
     {
-        orderByClause = $" ORDER BY {string.Join(',', columns)}";
+        orderByClause = $" ORDER BY {string.Join(",", columns)}";
         return this;
     }
 
     public QueryBuilder<T> GroupBy(params string[] columns)
     {
-        groupByClause = $" GROUP BY {string.Join(',', columns)}";
+        groupByClause = $" GROUP BY {string.Join(",", columns)}";
         return this;
     }
 

@@ -90,10 +90,10 @@ public class DbTable<T>(DbContext context) where T : class, new()
         var updateString = UpdateStatementString(update, where);
         return DbContext.ExecuteAsync(updateString, cancellationToken: cancellationToken);
     }
-    public string UpdateStatementString(Expression<Func<T>> updateStatment, Expression<Func<T, bool>>? where = null)
+    public string UpdateStatementString(Expression<Func<T>> updateStatement, Expression<Func<T, bool>>? where = null)
     {
         StringBuilder queryStringBuilder = new($"UPDATE {DbTable<T>.TableName} SET ");
-        if (updateStatment.Body is not MemberInitExpression initExpression) throw new ArgumentException("Must be a MemberInitExpression (i.e. () => new Record() { Name = \"Some name\" })", nameof(updateStatment));
+        if (updateStatement.Body is not MemberInitExpression initExpression) throw new ArgumentException("Must be a MemberInitExpression (i.e. () => new Record() { Name = \"Some name\" })", nameof(updateStatement));
 
         int bindingCount = initExpression.Bindings.Count;
         int counter = 0;
@@ -123,7 +123,7 @@ public class DbTable<T>(DbContext context) where T : class, new()
 
     public Task<int> DeleteAsync(Expression<Func<T, bool>>? where, CancellationToken? cancellationToken = null)
     {
-        var queryStringBuilder = new StringBuilder($"DELETE FROM ");
+        var queryStringBuilder = new StringBuilder("DELETE FROM ");
         queryStringBuilder.Append(TableName);
         if(where != null)
         {
@@ -145,8 +145,13 @@ public class DbTable<T>(DbContext context) where T : class, new()
 
         var finalQuery = queryStringBuilder.ToString();
 
+        #if !NETSTANDARD2_0
         await using var command = await DbContext.CreateCommand(finalQuery, null, cancellationToken: finalCToken);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken: finalCToken);
+        #else
+        using var command = await DbContext.CreateCommand(finalQuery, null, cancellationToken: finalCToken);
+        using var reader = await command.ExecuteReaderAsync(cancellationToken: finalCToken);
+        #endif
         return reader.HasRows;
     }
 }

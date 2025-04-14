@@ -7,6 +7,7 @@
         <IncludeBuildOutput>false</IncludeBuildOutput>
         <Nullable>enable</Nullable>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
         <Authors>Vuk Uskokovic</Authors>
         <PackageProjectUrl>https://github.com/vukuskokovic/UskokDB</PackageProjectUrl>
         <RepositoryUrl>https://github.com/vukuskokovic/UskokDB</RepositoryUrl>
@@ -15,6 +16,7 @@
         <Description>Code generation for UskokDB
 Currently only generated table name and column names but planning to make linqtosql code generated</Description>
         <Copyright>MIT</Copyright>
+        <Version>1.0.1</Version>
     </PropertyGroup>
 
     <ItemGroup>
@@ -26,6 +28,6 @@ Currently only generated table name and column names but planning to make linqto
     </ItemGroup>
 
     <ItemGroup>
-        <None Include="$(TargetPath)" Pack="true" PackagePath="analyzers/dotnet/cs" />
+      <ProjectReference Include="..\UskokDB\UskokDB.csproj" />
     </ItemGroup>
 </Project>

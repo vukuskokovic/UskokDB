@@ -32,14 +32,14 @@ public class TableCodeGenerator : IIncrementalGenerator
         initializationContext.RegisterSourceOutput(tableNameClasses, (context, classDeclaration) =>
         {
             var code = GenerateTableClassCode(classDeclaration);
-            context.AddSource($"{classDeclaration.Identifier.ToString()}.sqlconstants.g.cs", code);
+            context.AddSource($"{classDeclaration.Identifier.ToString()}.g.cs", code);
         });
     }
 
     private static string GenerateTableClassCode(ClassDeclarationSyntax classDeclaration)
     {
         var className = classDeclaration.Identifier.Text;
-        var classNamespace = GetNamespace(classDeclaration);
+        var classNamespace = Helpers.GetNamespaceForClassDeclaration(classDeclaration);
         
         var builder = new StringBuilder();
         builder.AppendLine("using System;");
@@ -120,19 +120,7 @@ public class TableCodeGenerator : IIncrementalGenerator
         return builder.ToString();
     }
     
-    private static string? GetNamespace(ClassDeclarationSyntax classDeclaration)
-    {
-        SyntaxNode? current = classDeclaration.Parent;
-
-        while (current != null)
-        {
-            if (current is BaseNamespaceDeclarationSyntax namespaceDecl)
-                return namespaceDecl.Name.ToString();
-            current = current.Parent;
-        }
-
-        return null;
-    }
+    
     
     private static string FirstLetterLowerCase(string str)
     {

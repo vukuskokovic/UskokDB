@@ -6,15 +6,10 @@ using UskokDB.Attributes;
 
 var context = new ShopDbContext();
 await context.ExecuteAsync(context.GetTableCreationString());
-var doesExist = await context.TestTable.ExistsAsync(r => r.Id == "testId");
-Console.WriteLine(doesExist);
-await context.TestTable.InsertAsync(new Test(){
-    Id = "testId"
-});
-doesExist = await context.TestTable.ExistsAsync(r => r.Id == "testId");
-Console.WriteLine(doesExist);
-Console.WriteLine("Test");
-
+for (var i = 0; i < 10; i++)
+{
+    await context.TestTable.Where(r => r.Id == "testId").QueryAsync();
+}
 
 public class ShopDbContext : DbContext
 {

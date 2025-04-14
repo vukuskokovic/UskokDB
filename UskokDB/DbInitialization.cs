@@ -8,9 +8,8 @@ using UskokDB.Attributes;
 
 namespace UskokDB;
 
-internal static class DbInitilization
+internal static class DbInitialization
 {
-
     private static readonly Dictionary<Type, Dictionary<DbType, string>> TypeInDatabase = new()
     {
         [typeof(int)] = new Dictionary<DbType, string>
@@ -93,9 +92,9 @@ internal static class DbInitilization
         }
     };
 
-    private static readonly Type metadataType = typeof(TypeMetadata<>);
-    private static readonly Type dbTableType = typeof(DbTable<>);
-    private static readonly Type foreignKeyAttrType = typeof(ForeignKeyAttribute<>);
+    private static readonly Type MetadataType = typeof(TypeMetadata<>);
+    private static readonly Type DbTableType = typeof(DbTable<>);
+    private static readonly Type ForeignKeyAttrType = typeof(ForeignKeyAttribute<>);
     private static Type? GetDbTableType(Type? type)
     {
         while (type != null && type != typeof(object))
@@ -111,16 +110,16 @@ internal static class DbInitilization
 
     private static string GetTableName(Type tableType)
     {
-        return dbTableType.MakeGenericType(tableType).GetProperty("TableName", BindingFlags.Static | BindingFlags.Public)?.GetValue(null) as string ?? tableType.Name; 
+        return DbTableType.MakeGenericType(tableType).GetProperty("TableName", BindingFlags.Static | BindingFlags.Public)?.GetValue(null) as string ?? tableType.Name; 
     }
 
     private static void AddTableString(DbContext context, StringBuilder builder, Type tableType)
     {
-        List<string> primaryKeys = new();
+        List<string> primaryKeys = [];
         // t1: columnName, t2: tableName, t3: foreignColumnName
-        List<Tuple<string, string, string>> foreignKeys = new();
+        List<Tuple<string, string, string>> foreignKeys = [];
         var tableName = GetTableName(tableType);
-        List<TypeMetadataProperty> properties = (List<TypeMetadataProperty>)metadataType.MakeGenericType(tableType).GetProperty("Properties")!.GetValue(null)!;
+        var properties = (List<TypeMetadataProperty>)MetadataType.MakeGenericType(tableType).GetProperty("Properties")!.GetValue(null)!;
         builder.Append("CREATE TABLE IF NOT EXISTS `");
         builder.Append(tableName);
         builder.Append("` ");
@@ -143,13 +142,13 @@ internal static class DbInitilization
         if(primaryKeys.Count > 0)
         {
             builder.Append(", PRIMARY KEY (");
-            builder.Append(string.Join(',', primaryKeys));
+            builder.Append(string.Join(",", primaryKeys));
             builder.Append(')');
         }
         if(foreignKeys.Count > 0)
         {
             builder.Append(", ");
-            builder.Append(string.Join(",", foreignKeys.Select(fkey => $"FOREIGN KEY ({fkey.Item1}) REFERENCES {fkey.Item2}({fkey.Item3})")));
+            builder.Append(string.Join(",", foreignKeys.Select(foreignKey => $"FOREIGN KEY ({foreignKey.Item1}) REFERENCES {foreignKey.Item2}({foreignKey.Item3})")));
         }
 
         builder.Append(");\n");
@@ -158,11 +157,11 @@ internal static class DbInitilization
     private static void AddPropertyTableType(DbContext context, string tableName, StringBuilder builder, Type type, int? maxLength, out bool addNotNull, string? customTypeName = null)
     {
         addNotNull = true;
-        var underylingType = Nullable.GetUnderlyingType(type);
-        if (underylingType != null)
+        var underlyingType = Nullable.GetUnderlyingType(type);
+        if (underlyingType != null)
         {
             addNotNull = false;
-            type = underylingType;
+            type = underlyingType;
         }
 
         if (type == typeof(string))
@@ -234,7 +233,7 @@ internal static class DbInitilization
             else
             {
                 var type = attr.GetType();   
-                if (!type.IsGenericType || type.GetGenericTypeDefinition() != foreignKeyAttrType) continue;
+                if (!type.IsGenericType || type.GetGenericTypeDefinition() != ForeignKeyAttrType) continue;
 
                 var foreignTableType = type.GenericTypeArguments[0];
                 var foreignTableName = GetTableName(foreignTableType);
@@ -249,15 +248,21 @@ internal static class DbInitilization
         AddPropertyTableType(context, tableName, builder, property.Type, maxLengthAttr?.Length, out var addNotNull);
         if(isAutoIncrement)
         {
-            if(context.DbType == DbType.MySQL)
-                builder.Append(" AUTO_INCREMENT");
-            else if (context.DbType == DbType.PostgreSQL)
-                builder.Append(" SERIAL");
-            else if (context.DbType == DbType.SQLite)
+            switch (context.DbType)
             {
-                if (!isPrimaryKey) throw new Exception($"Auto increment cannot be used without being the primary key in SQLite, '{tableName}' column '{property.PropertyName}'");
-
-                builder.Append(" AUTOINCREMENT");
+                case DbType.MySQL:
+                    builder.Append(" AUTO_INCREMENT");
+                    break;
+                case DbType.PostgreSQL:
+                    builder.Append(" SERIAL");
+                    break;
+                case DbType.SQLite when !isPrimaryKey:
+                    throw new Exception($"Auto increment cannot be used without being the primary key in SQLite, '{tableName}' column '{property.PropertyName}'");
+                case DbType.SQLite:
+                    builder.Append(" AUTOINCREMENT");
+                    break;
+                default:
+                    throw new Exception($"Unsupported DbType '{context.DbType}'");
             }
         }
         else if(isUnique){
