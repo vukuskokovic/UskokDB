@@ -27,7 +27,7 @@ public class QueryBuilder<T>(DbTable<T> table) where T : class, new()
 
     public QueryBuilder<T> Where(string query, object? paramsObject = null)
     {
-        whereClause = " WHERE " + table.DbContext.DbIO.PopulateParams(query, paramsObject);
+        whereClause = " WHERE " + table.DbContext.DbIo.PopulateParams(query, paramsObject);
         return this;
     }
 

@@ -47,7 +47,7 @@ public static class LinqToSql
         }
         else if(expression is ConstantExpression constantExpression)
         {
-            return context.DbIO.WriteValue(constantExpression.Value);
+            return context.DbIo.WriteValue(constantExpression.Value);
         }
         else if(expression is MemberExpression memberExpression)
         {
@@ -61,9 +61,9 @@ public static class LinqToSql
             }
             else
             {
-                if(memberType == null) return context.DbIO.WriteValue(null);
+                if(memberType == null) return context.DbIo.WriteValue(null);
 
-                return context.DbIO.WriteValue(GetMemberValue(memberExpression));
+                return context.DbIo.WriteValue(GetMemberValue(memberExpression));
             }
         }
 

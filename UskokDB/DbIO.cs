@@ -58,7 +58,7 @@ public class DbIO(DbContext dbContext)
 
     public bool ShouldJsonBeUsedForType(Type type)
     {
-        return dbContext.DbIOOptions.UseJsonForUnknownClassesAndStructs && (type.IsClass || type.IsArray || type.IsValueType || type.IsEnum);
+        return dbContext.DbIoOptions.UseJsonForUnknownClassesAndStructs && (type.IsClass || type.IsArray || type.IsValueType || type.IsEnum);
     }
 
     private const string NullValue = "NULL";
@@ -97,16 +97,16 @@ public class DbIO(DbContext dbContext)
             return Convert.ChangeType(value, type.GetEnumUnderlyingType())?.ToString() ?? NullValue;
         }
 
-        if (dbContext.DbIOOptions.ParameterConverters.TryGetValue(type, out var converter))
+        if (dbContext.DbIoOptions.ParameterConverters.TryGetValue(type, out var converter))
         {
             return WriteValue(converter.Write(value));
         }
 
         if (ShouldJsonBeUsedForType(type))
         {
-            if (dbContext.DbIOOptions.JsonWriter == null) throw new NullReferenceException("Configured to use json for unknown types and structs but json writer was null");
+            if (dbContext.DbIoOptions.JsonWriter == null) throw new NullReferenceException("Configured to use json for unknown types and structs but json writer was null");
 
-            return WriteValue(dbContext.DbIOOptions.JsonWriter(value));
+            return WriteValue(dbContext.DbIoOptions.JsonWriter(value));
         }
 
         return value?.ToString() ?? NullValue;
@@ -116,7 +116,7 @@ public class DbIO(DbContext dbContext)
     {
         if (value is null or DBNull) return null;
 
-        if (dbContext.DbIOOptions.ParameterConverters.TryGetValue(type, out var parameterConverter))
+        if (dbContext.DbIoOptions.ParameterConverters.TryGetValue(type, out var parameterConverter))
         {
             return parameterConverter.Read(value);
         }
@@ -127,11 +127,11 @@ public class DbIO(DbContext dbContext)
 
         if (!ShouldJsonBeUsedForType(type)) return value;
 
-        if (dbContext.DbIOOptions.JsonReader == null) throw new NullReferenceException("Configured to use json for unknown types and structs but json reader was null");
+        if (dbContext.DbIoOptions.JsonReader == null) throw new NullReferenceException("Configured to use json for unknown types and structs but json reader was null");
         if (value is not string jsonStr)
             throw new Exception($"Error reading type {type.FullName} did not get json string from the database");
 
-        return dbContext.DbIOOptions.JsonReader(jsonStr, type);
+        return dbContext.DbIoOptions.JsonReader(jsonStr, type);
 
     }
 

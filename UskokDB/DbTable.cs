@@ -10,7 +10,6 @@ using UskokDB.Attributes;
 namespace UskokDB;
 public class DbTable<T>(DbContext context) where T : class, new()
 {
-    
     private static string InsertInitString { get; } = $"INSERT INTO `{TableName}` VALUES (";
     public DbContext DbContext { get; } = context;
 
@@ -31,30 +30,16 @@ public class DbTable<T>(DbContext context) where T : class, new()
         }
     }
 
-    public Task InsertAsync(T item, CancellationToken? cancellationToken = null){
+    #region Query builders
+    public string BuildInsertQueryString(T item)
+    {
         StringBuilder builder = new();
         AddItemToInsertStringBuilder(builder, item);
         var cmd = builder.ToString();
-        return DbContext.ExecuteAsync(cmd, cancellationToken: cancellationToken);
+        return cmd;
     }
-    public Task InsertAsync(params T[] items)
-    {
-        string cmd = GetInsertString(items);
-        return DbContext.ExecuteAsync(cmd);
-    }
-    public Task InsertAsync(CancellationToken cancellationToken, params T[] items)
-    {
-        string cmd = GetInsertString(items);
-        return DbContext.ExecuteAsync(cmd, cancellationToken: cancellationToken);
-    }
-
-    public Task InsertAsync(IEnumerable<T> items, CancellationToken? cancellationToken = null)
-    {
-        string cmd = GetInsertString(items);
-        return DbContext.ExecuteAsync(cmd, cancellationToken: cancellationToken);
-    }
-
-    public string GetInsertString(IEnumerable<T> items)
+    public string BuildInsertQueryString(IEnumerable<T> items) => GetInsertString(items);
+    private string GetInsertString(IEnumerable<T> items)
     {
         StringBuilder builder = new();
         foreach(var item in items)
@@ -63,7 +48,6 @@ public class DbTable<T>(DbContext context) where T : class, new()
         }
         return builder.ToString();
     }
-
     private void AddItemToInsertStringBuilder(StringBuilder builder, T item)
     {
         builder.Append(InsertInitString);
@@ -71,27 +55,15 @@ public class DbTable<T>(DbContext context) where T : class, new()
         int l = TypeMetadata<T>.Properties.Count;
         foreach (var property in TypeMetadata<T>.Properties)
         {
-            builder.Append(DbContext.DbIO.WriteValue(property.PropertyInfo.GetValue(item)));
+            builder.Append(DbContext.DbIo.WriteValue(property.PropertyInfo.GetValue(item)));
 
             if (++i != l) builder.Append(',');
         }
         builder.Append(");\n");
     }
-
-    public QueryBuilder<T> Where(Expression<Func<T, bool>> expression) => new QueryBuilder<T>(this).Where(expression);
-    public QueryBuilder<T> Where(string query, object? paramsObject = null) => new QueryBuilder<T>(this).Where(query, paramsObject);
-    public QueryBuilder<T> OrderBy(params string[] columns) => new QueryBuilder<T>(this).OrderBy(columns);
-
-    public QueryBuilder<T> GroupBy(params string[] columns) => new QueryBuilder<T>(this).GroupBy(columns);
-
-    public Task<int> UpdateAsync(Expression<Func<T>> update, Expression<Func<T, bool>>? where = null, CancellationToken? cancellationToken = null)
-    {
-        if (update == null) throw new ArgumentException("Cannot be null, the only reason it could be in code is to remind to use where statment because if where is null all records are updated this is used to remind", nameof(update));
-        var updateString = UpdateStatementString(update, where);
-        return DbContext.ExecuteAsync(updateString, cancellationToken: cancellationToken);
-    }
     public string UpdateStatementString(Expression<Func<T>> updateStatement, Expression<Func<T, bool>>? where = null)
     {
+        if (updateStatement == null) throw new ArgumentException("Cannot be null, the only reason it could be in code is to remind to use where statment because if where is null all records are updated this is used to remind", nameof(updateStatement));
         StringBuilder queryStringBuilder = new($"UPDATE {DbTable<T>.TableName} SET ");
         if (updateStatement.Body is not MemberInitExpression initExpression) throw new ArgumentException("Must be a MemberInitExpression (i.e. () => new Record() { Name = \"Some name\" })", nameof(updateStatement));
 
@@ -116,12 +88,12 @@ public class DbTable<T>(DbContext context) where T : class, new()
             queryStringBuilder.Append(" WHERE ");
             queryStringBuilder.Append(LinqToSql.Convert<T>(DbContext, where));
         }
-        queryStringBuilder.Append(';');
+        queryStringBuilder.Append(";\n");
         return queryStringBuilder.ToString();
         
     }
 
-    public Task<int> DeleteAsync(Expression<Func<T, bool>>? where, CancellationToken? cancellationToken = null)
+    public string BuildDeleteQueryString(Expression<Func<T, bool>>? where)
     {
         var queryStringBuilder = new StringBuilder("DELETE FROM ");
         queryStringBuilder.Append(TableName);
@@ -131,11 +103,33 @@ public class DbTable<T>(DbContext context) where T : class, new()
             queryStringBuilder.Append(LinqToSql.Convert<T>(DbContext, where));
         }
 
-        return DbContext.ExecuteAsync(queryStringBuilder.ToString(), cancellationToken: cancellationToken);
-    }
+        queryStringBuilder.Append(';');
 
-    public async Task<bool> ExistsAsync(Expression<Func<T, bool>>? where, CancellationToken? cancellationToken = null){
-        var finalCToken = cancellationToken ?? CancellationToken.None;
+        return queryStringBuilder.ToString();
+    }
+    
+    
+    
+    #endregion
+
+    public Task InsertAsync(T item, CancellationToken cancellationToken = default) => DbContext.ExecuteAsync(BuildInsertQueryString(item), cancellationToken: cancellationToken);
+    public Task InsertAsync(params T[] items) => DbContext.ExecuteAsync(BuildInsertQueryString(items));
+    public Task InsertAsync(CancellationToken cancellationToken, params T[] items) => DbContext.ExecuteAsync(BuildInsertQueryString(items), cancellationToken: cancellationToken);
+    public Task InsertAsync(IEnumerable<T> items, CancellationToken cancellationToken = default) => DbContext.ExecuteAsync(BuildInsertQueryString(items), cancellationToken: cancellationToken);
+
+    public QueryBuilder<T> Where(Expression<Func<T, bool>> expression) => new QueryBuilder<T>(this).Where(expression);
+    public QueryBuilder<T> Where(string query, object? paramsObject = null) => new QueryBuilder<T>(this).Where(query, paramsObject);
+    public QueryBuilder<T> OrderBy(params string[] columns) => new QueryBuilder<T>(this).OrderBy(columns);
+
+    public QueryBuilder<T> GroupBy(params string[] columns) => new QueryBuilder<T>(this).GroupBy(columns);
+
+    public Task<int> UpdateAsync(Expression<Func<T>> update, Expression<Func<T, bool>>? where = null, CancellationToken cancellationToken = default) =>
+        DbContext.ExecuteAsync(UpdateStatementString(update, where), cancellationToken: cancellationToken);
+    
+    public Task<int> DeleteAsync(Expression<Func<T, bool>>? where, CancellationToken cancellationToken = default) =>
+        DbContext.ExecuteAsync(BuildDeleteQueryString(where), cancellationToken: cancellationToken);
+    
+    public async Task<bool> ExistsAsync(Expression<Func<T, bool>>? where, CancellationToken cancellationToken = default){
         var queryStringBuilder = new StringBuilder("SELECT 1 FROM ");
         queryStringBuilder.Append(TableName);
         if(where != null){
@@ -146,12 +140,20 @@ public class DbTable<T>(DbContext context) where T : class, new()
         var finalQuery = queryStringBuilder.ToString();
 
         #if !NETSTANDARD2_0
-        await using var command = await DbContext.CreateCommand(finalQuery, null, cancellationToken: finalCToken);
-        await using var reader = await command.ExecuteReaderAsync(cancellationToken: finalCToken);
+        await using var command = await DbContext.CreateCommand(finalQuery, null, cancellationToken: cancellationToken);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken: cancellationToken);
         #else
-        using var command = await DbContext.CreateCommand(finalQuery, null, cancellationToken: finalCToken);
-        using var reader = await command.ExecuteReaderAsync(cancellationToken: finalCToken);
+        using var command = await DbContext.CreateCommand(finalQuery, null, cancellationToken: cancellationToken);
+        using var reader = await command.ExecuteReaderAsync(cancellationToken: cancellationToken);
         #endif
         return reader.HasRows;
     }
+
+
+    public void Insert(T item) => DbContext.AppendQueryCmd(BuildInsertQueryString(item), appendSemiColor: false);
+    public void Insert(IEnumerable<T> items) => DbContext.AppendQueryCmd(BuildInsertQueryString(items), appendSemiColor: false);
+    public void Insert(params T[] items) => DbContext.AppendQueryCmd(BuildInsertQueryString(items), appendSemiColor: false);
+    public void Update(Expression<Func<T>> update, Expression<Func<T, bool>>? where = null) =>
+        DbContext.AppendQueryCmd(UpdateStatementString(update, where), appendSemiColor: false);
+    public void Delete(Expression<Func<T, bool>>? where) => DbContext.AppendQueryCmd(BuildDeleteQueryString(where), appendSemiColor: false);
 }

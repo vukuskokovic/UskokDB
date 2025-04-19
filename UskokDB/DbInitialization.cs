@@ -197,7 +197,7 @@ internal static class DbInitialization
             return;
         }
 
-        if (context.DbIOOptions.ParameterConverters.TryGetValue(type, out var converter))
+        if (context.DbIoOptions.ParameterConverters.TryGetValue(type, out var converter))
         {
             maxLength = converter.GetCustomMaxLength();
             customTypeName = converter.GetCustomTypeInTable();
@@ -205,7 +205,7 @@ internal static class DbInitialization
             return;
         }
 
-        if (context.DbIO.ShouldJsonBeUsedForType(type))
+        if (context.DbIo.ShouldJsonBeUsedForType(type))
         {
             builder.Append("JSON");
             return;

@@ -11,9 +11,9 @@
 		<PackageTags>db, database, orm, mysql</PackageTags>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<Authors>Vuk Uskokovic</Authors>
-		<Version>3.3.1</Version>
+		<Version>3.4.0</Version>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<PackageReleaseNotes>A bit of code cleanup</PackageReleaseNotes>
+		<PackageReleaseNotes>Added queued commands.</PackageReleaseNotes>
 		<Description>A c# orm made for simple and fast usage.
 Mainly made to be used with UskokDB.MySql package.</Description>
 		<TargetFrameworks>net8.0;net9.0;netstandard2.0</TargetFrameworks>

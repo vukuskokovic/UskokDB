@@ -5,24 +5,16 @@ using UskokDB;
 using UskokDB.Attributes;
 
 var context = new ShopDbContext();
-await context.ExecuteAsync(context.GetTableCreationString());
-for (var i = 0; i < 10; i++)
-{
-    await context.TestTable.Where(r => r.Id == "testId").QueryAsync();
-}
+context.TestTable.Update(() => new MyTable(){Whatever = "3"}, where: t => t.Whatever == "Test");
+await context.ExecuteQueue();
+Console.WriteLine(context.BuildQueue());
+
 
 public class ShopDbContext : DbContext
 {
-    public DbTable<Test> TestTable { get; }
+    public DbTable<MyTable> TestTable { get; }
     public ShopDbContext() : base(DbType.MySQL,() => new MySqlConnection("Server=localhost;User ID=root;Database=test"))
     {
-        TestTable = new DbTable<Test>(this);
+        TestTable = new DbTable<MyTable>(this);
     }
-}
-
-[TableNameAttribute("testTable")]
-public class Test
-{
-    [Key, MaxLength(10)]
-    public string Id {get;set;} = null!;
 }
