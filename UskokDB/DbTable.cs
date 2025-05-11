@@ -92,6 +92,38 @@ public class DbTable<T>(DbContext context) where T : class, new()
         return queryStringBuilder.ToString();
         
     }
+    
+    public string UpdateWithTypedStatementString(Expression<Func<T, T>> updateStatement, Expression<Func<T, bool>>? where = null)
+    {
+        if (updateStatement == null) throw new ArgumentException("Cannot be null, the only reason it could be in code is to remind to use where statment because if where is null all records are updated this is used to remind", nameof(updateStatement));
+        StringBuilder queryStringBuilder = new($"UPDATE {DbTable<T>.TableName} SET ");
+        if (updateStatement.Body is not MemberInitExpression initExpression) throw new ArgumentException("Must be a MemberInitExpression (i.e. () => new Record() { Name = \"Some name\" })", nameof(updateStatement));
+
+        int bindingCount = initExpression.Bindings.Count;
+        int counter = 0;
+        foreach (var binding in initExpression.Bindings)
+        {
+            if (binding is not MemberAssignment assigment)
+                throw new ArgumentException("Bindings must be assigment (i.e. x => x.Name = \"New Name\")");
+
+            if (!TypeMetadata<T>.NameToPropertyMap.TryGetValue(binding.Member.Name, out var propertyMetaData))
+                throw new Exception($"\"{binding.Member.Name}\" property is not mapped to db");
+
+            var valueWritten = LinqToSql.CompileExpression<T>(DbContext, assigment.Expression);
+            queryStringBuilder.Append($"{propertyMetaData.PropertyName}={valueWritten}");
+            if (++counter == bindingCount) continue;
+
+            queryStringBuilder.Append(',');
+        }
+        if (where != null)
+        {
+            queryStringBuilder.Append(" WHERE ");
+            queryStringBuilder.Append(LinqToSql.Convert<T>(DbContext, where));
+        }
+        queryStringBuilder.Append(";\n");
+        return queryStringBuilder.ToString();
+        
+    }
 
     public string BuildDeleteQueryString(Expression<Func<T, bool>>? where)
     {
@@ -126,6 +158,9 @@ public class DbTable<T>(DbContext context) where T : class, new()
     public Task<int> UpdateAsync(Expression<Func<T>> update, Expression<Func<T, bool>>? where = null, CancellationToken cancellationToken = default) =>
         DbContext.ExecuteAsync(UpdateStatementString(update, where), cancellationToken: cancellationToken);
     
+    public Task<int> UpdateAsync(Expression<Func<T, T>> update, Expression<Func<T, bool>>? where = null, CancellationToken cancellationToken = default) =>
+        DbContext.ExecuteAsync(UpdateWithTypedStatementString(update, where), cancellationToken: cancellationToken);
+    
     public Task<int> DeleteAsync(Expression<Func<T, bool>>? where, CancellationToken cancellationToken = default) =>
         DbContext.ExecuteAsync(BuildDeleteQueryString(where), cancellationToken: cancellationToken);
     
@@ -155,5 +190,8 @@ public class DbTable<T>(DbContext context) where T : class, new()
     public void Insert(params T[] items) => DbContext.AppendQueryCmd(BuildInsertQueryString(items), appendSemiColor: false);
     public void Update(Expression<Func<T>> update, Expression<Func<T, bool>>? where = null) =>
         DbContext.AppendQueryCmd(UpdateStatementString(update, where), appendSemiColor: false);
+    public void Update(Expression<Func<T, T>> update, Expression<Func<T, bool>>? where = null) =>
+        DbContext.AppendQueryCmd(UpdateWithTypedStatementString(update, where), appendSemiColor: false);
+    
     public void Delete(Expression<Func<T, bool>>? where) => DbContext.AppendQueryCmd(BuildDeleteQueryString(where), appendSemiColor: false);
 }

@@ -41,8 +41,12 @@ public static class LinqToSql
         }
         else if(expression is UnaryExpression unaryExpression)
         {
-            string joiner = unaryExpression.NodeType == ExpressionType.Negate ? "-" : " JOINER ";
-
+            string joiner = unaryExpression.NodeType switch
+            {
+                ExpressionType.Negate => " - ",
+                ExpressionType.Convert => "",
+                _ => $" UNKNOWN JOINER({unaryExpression.NodeType}) "
+            };
             return $"{joiner}{CompileExpression<T>(context, unaryExpression.Operand)}";
         }
         else if(expression is ConstantExpression constantExpression)
