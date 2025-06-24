@@ -10,7 +10,7 @@ using UskokDB.Attributes;
 namespace UskokDB;
 public class DbTable<T>(DbContext context) where T : class, new()
 {
-    private static string InsertInitString { get; } = $"INSERT INTO `{TableName}` VALUES (";
+    private static string InsertInitString { get; } = $"INSERT INTO {TableName} VALUES (";
     public DbContext DbContext { get; } = context;
 
     private static string? _tableName = null;

@@ -120,9 +120,9 @@ internal static class DbInitialization
         List<Tuple<string, string, string>> foreignKeys = [];
         var tableName = GetTableName(tableType);
         var properties = (List<TypeMetadataProperty>)MetadataType.MakeGenericType(tableType).GetProperty("Properties")!.GetValue(null)!;
-        builder.Append("CREATE TABLE IF NOT EXISTS `");
+        builder.Append("CREATE TABLE IF NOT EXISTS ");
         builder.Append(tableName);
-        builder.Append("` ");
+        builder.Append(" ");
         builder.Append('(');
         for (var i = 0; i < properties.Count; i++)
         {
