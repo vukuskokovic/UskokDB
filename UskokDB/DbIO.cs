@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Dynamic;
+using System.Globalization;
 using System.Text;
 
 namespace UskokDB;
@@ -74,21 +75,24 @@ public class DbIO(DbContext dbContext)
         if (value is null) return NullValue;
 
         //all generic types
-        if (value is byte or short or ushort or int or uint or long or ulong or bool or float or double or char or decimal)
+        if (value is byte or short or ushort or int or uint or long or ulong or float or double or char or decimal)
         {
-            return value.ToString()!;
+            return Convert.ToString(value!, CultureInfo.InvariantCulture)!;
+        }
+
+        if (value is bool b)
+        {
+            return b ? "1" : "0";
         }
 
         if (value is DateTime dateTime)
         {
-            return $"'{dateTime:yyyy-MM-dd HH:mm:ss}'";
+            return $"'{dateTime:yyyy-MM-dd HH:mm:ss.fff}'";
         }
 
         if (value is string str)
         {
-            return str.Length == 0 ?
-                EmptyString :
-                $"'{str.Replace("'", "\\'")}'";
+            return $"'{str.Replace("'", "''")}'";
         }
 
         var type = value.GetType();

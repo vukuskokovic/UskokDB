@@ -139,8 +139,50 @@ public class DbTable<T>(DbContext context) where T : class, new()
 
         return queryStringBuilder.ToString();
     }
+
+    private void AppendDeleteByKeyLine(StringBuilder builder, T item)
+    {
+        var tableKeys = TypeMetadata<T>.Keys;
+        var tableKeysCount = tableKeys.Count;
+        if (tableKeysCount == 0)
+            throw new Exception("Cannot delete by primary key table has no primary keys");
+        builder.Append("DELETE FROM ");
+        builder.Append(TableName);
+        builder.Append(" WHERE ");
+        int i = 0;
+        foreach (var keyPropertyMetadata in tableKeys)
+        {
+            var keyValue = keyPropertyMetadata.PropertyInfo.GetValue(item);
+            var keyPropertyName = keyPropertyMetadata.PropertyName;
+            builder.Append(keyPropertyName);
+            builder.Append("=");
+            builder.Append(DbContext.DbIo.WriteValue(keyValue));
+            if (i + 1 == tableKeysCount) break;
+            builder.Append(" AND ");
+            i++;
+        }
+        
+
+        builder.Append(';');
+    }
+
+    public string BuildDeleteByKey(T item)
+    {
+        StringBuilder builder = new();
+        AppendDeleteByKeyLine(builder, item);
+        return builder.ToString();
+    }
     
-    
+    public string BuildDeleteByKey(IEnumerable<T> items)
+    {
+        StringBuilder builder = new();
+        foreach (var item in items)
+        {
+            AppendDeleteByKeyLine(builder, item);
+            builder.Append('\n');
+        }
+        return builder.ToString();
+    }
     
     #endregion
 
@@ -163,6 +205,12 @@ public class DbTable<T>(DbContext context) where T : class, new()
     
     public Task<int> DeleteAsync(Expression<Func<T, bool>>? where, CancellationToken cancellationToken = default) =>
         DbContext.ExecuteAsync(BuildDeleteQueryString(where), cancellationToken: cancellationToken);
+    public Task<int> DeleteByKeyAsync(T item) =>
+        DbContext.ExecuteAsync(BuildDeleteByKey(item));
+    public Task<int> DeleteByKeyAsync(IEnumerable<T> items) =>
+        DbContext.ExecuteAsync(BuildDeleteByKey(items));
+    public Task<int> DeleteByKeyAsync(params T[] items) =>
+        DbContext.ExecuteAsync(BuildDeleteByKey(items));
     
     public async Task<bool> ExistsAsync(Expression<Func<T, bool>>? where, CancellationToken cancellationToken = default){
         var queryStringBuilder = new StringBuilder("SELECT 1 FROM ");
@@ -185,13 +233,16 @@ public class DbTable<T>(DbContext context) where T : class, new()
     }
 
 
-    public void Insert(T item) => DbContext.AppendQueryCmd(BuildInsertQueryString(item), appendSemiColor: false);
-    public void Insert(IEnumerable<T> items) => DbContext.AppendQueryCmd(BuildInsertQueryString(items), appendSemiColor: false);
-    public void Insert(params T[] items) => DbContext.AppendQueryCmd(BuildInsertQueryString(items), appendSemiColor: false);
-    public void Update(Expression<Func<T>> update, Expression<Func<T, bool>>? where = null) =>
+    public void AppendInsert(T item) => DbContext.AppendQueryCmd(BuildInsertQueryString(item), appendSemiColor: false);
+    public void AppendInsert(IEnumerable<T> items) => DbContext.AppendQueryCmd(BuildInsertQueryString(items), appendSemiColor: false);
+    public void AppendInsert(params T[] items) => DbContext.AppendQueryCmd(BuildInsertQueryString(items), appendSemiColor: false);
+    public void AppendUpdate(Expression<Func<T>> update, Expression<Func<T, bool>>? where = null) =>
         DbContext.AppendQueryCmd(UpdateStatementString(update, where), appendSemiColor: false);
-    public void Update(Expression<Func<T, T>> update, Expression<Func<T, bool>>? where = null) =>
+    public void AppendUpdate(Expression<Func<T, T>> update, Expression<Func<T, bool>>? where = null) =>
         DbContext.AppendQueryCmd(UpdateWithTypedStatementString(update, where), appendSemiColor: false);
     
-    public void Delete(Expression<Func<T, bool>>? where) => DbContext.AppendQueryCmd(BuildDeleteQueryString(where), appendSemiColor: false);
+    public void AppendDelete(Expression<Func<T, bool>>? where) => DbContext.AppendQueryCmd(BuildDeleteQueryString(where), appendSemiColor: false);
+    public void AppendDeleteByKey(T item) => DbContext.AppendQueryCmd(BuildDeleteByKey(item), appendSemiColor: false);
+    public void AppendDeleteByKey(IEnumerable<T> items) => DbContext.AppendQueryCmd(BuildDeleteByKey(items), appendSemiColor: false);
+    public void AppendDeleteByKey(params T[] items) => DbContext.AppendQueryCmd(BuildDeleteByKey(items), appendSemiColor: false);
 }

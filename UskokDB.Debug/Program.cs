@@ -5,13 +5,13 @@ using UskokDB;
 using UskokDB.Attributes;
 
 var context = new ShopDbContext();
-
-context.TestTable.Update((t) => new ParkingSession()
-{
-    Radius = t.Radius + 3,
-    SpotLatitude = t.SpotLatitude + 3,
-}, (t) => t.Radius > 3 && t.SpotLatitude < 2);
-context.TestTable.Insert(new ParkingSession(){});
+context.TestTable.AppendDeleteByKey(
+    new ParkingSession()
+    {
+        SessionId = Guid.NewGuid(),
+        Age = 3,
+        Name = "Name"
+    });
 Console.WriteLine(context.BuildQueue());
 
 

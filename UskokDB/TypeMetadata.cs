@@ -19,10 +19,16 @@ public static class TypeMetadata<T> where T : class, new()
             var meta = new TypeMetadataProperty(property);
             NameToPropertyMap[property.Name] = meta;
             Properties.Add(meta);
+
+            if (meta.IsKey)
+            {
+                Keys.Add(meta);
+            }
         }
     }
     public static Type Type { get; }
     public static List<TypeMetadataProperty> Properties { get; } = [];
+    public static List<TypeMetadataProperty> Keys { get; } = [];
     public static Dictionary<string, TypeMetadataProperty> NameToPropertyMap { get; } = [];
 }
 
@@ -31,6 +37,7 @@ public class TypeMetadataProperty
     public PropertyInfo PropertyInfo { get; }
     public Type Type { get; }
     public string PropertyName { get; }
+    public bool IsKey { get; } = false;
 
     public TypeMetadataProperty(PropertyInfo propertyInfo)
     {
@@ -43,6 +50,11 @@ public class TypeMetadataProperty
         else
         {
             PropertyName = propertyInfo.Name.FirstLetterLowerCase();
+        }
+
+        if (propertyInfo.GetCustomAttribute<KeyAttribute>() is not null)
+        {
+            IsKey = true;
         }
     }
 }
