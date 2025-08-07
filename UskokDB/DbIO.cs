@@ -13,16 +13,13 @@ public class DbIOOptions
     public Func<object?, string?> JsonWriter { get; set; } = (value) => value == null? null : System.Text.Json.JsonSerializer.Serialize(value);
     public Func<string?, Type, object?> JsonReader { get; set; } = (jsonStr, type) => jsonStr == null? null : System.Text.Json.JsonSerializer.Deserialize(jsonStr, type);
     #else
+    //To support netstandard 2.0 since system.text.json is not available then(newtonsoft.json should be used)
     public Func<object?, string?>? JsonWriter { get; set; } = null;
     public Func<string?, Type, object?>? JsonReader { get; set; } = null;
     #endif
     
     public bool UseJsonForUnknownClassesAndStructs { get; set; } = false;
-    public Dictionary<Type, IParameterConverter> ParameterConverters { get; } = new()
-    {
-        [typeof(Guid)] = new DefaultParameterConverter<Guid, string>((guid) => guid.ToString(), Guid.Parse, Guid.Empty.ToString().Length),
-        [typeof(Guid?)] = new DefaultParameterConverter<Guid?, string?>((guid) => guid?.ToString(), (str) => str == null? null : Guid.Parse(str), Guid.Empty.ToString().Length)
-    };
+    public Dictionary<Type, IParameterConverter> ParameterConverters { get; } = [];
 }
 
 public class DbIO(DbContext dbContext)
@@ -74,6 +71,16 @@ public class DbIO(DbContext dbContext)
     {
         if (value is null) return NullValue;
 
+        if (value is string str)
+        {
+            return $"'{str.Replace("'", "''")}'";
+        }
+
+        if (value is Guid guid)
+        {
+            return $"'{guid}'";
+        }
+        
         //all generic types
         if (value is byte or short or ushort or int or uint or long or ulong or float or double or char or decimal)
         {
@@ -90,10 +97,7 @@ public class DbIO(DbContext dbContext)
             return $"'{dateTime:yyyy-MM-dd HH:mm:ss.fff}'";
         }
 
-        if (value is string str)
-        {
-            return $"'{str.Replace("'", "''")}'";
-        }
+        
 
         var type = value.GetType();
         if (type.IsEnum)
@@ -108,7 +112,8 @@ public class DbIO(DbContext dbContext)
 
         if (ShouldJsonBeUsedForType(type))
         {
-            if (dbContext.DbIoOptions.JsonWriter == null) throw new NullReferenceException("Configured to use json for unknown types and structs but json writer was null");
+            if (dbContext.DbIoOptions.JsonWriter == null) 
+                throw new UskokDbIoException("Configured to use json for unknown types and structs but json writer was null");
 
             return WriteValue(dbContext.DbIoOptions.JsonWriter(value));
         }
@@ -127,13 +132,21 @@ public class DbIO(DbContext dbContext)
 
         if (PrimitiveTypes.Contains(type)) return value;
 
+        if (type == typeof(Guid) || type == typeof(Guid?))
+        {
+            if (value is not string str)
+                throw new UskokDbIoException("Expected string for guid but value is not string");
+            
+            return Guid.Parse(str);
+        }
+        
         if (type.IsEnum) return value;
 
         if (!ShouldJsonBeUsedForType(type)) return value;
 
-        if (dbContext.DbIoOptions.JsonReader == null) throw new NullReferenceException("Configured to use json for unknown types and structs but json reader was null");
+        if (dbContext.DbIoOptions.JsonReader == null) throw new UskokDbIoException("Configured to use json for unknown types and structs but json reader was null");
         if (value is not string jsonStr)
-            throw new Exception($"Error reading type {type.FullName} did not get json string from the database");
+            throw new UskokDbIoException($"Error reading type {type.FullName} did not get json string from the database");
 
         return dbContext.DbIoOptions.JsonReader(jsonStr, type);
 

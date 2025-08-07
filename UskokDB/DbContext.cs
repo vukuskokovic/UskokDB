@@ -186,6 +186,9 @@ public abstract class DbContext : IDisposable
     #endregion
 
 
+    public Task<int> ExecuteTableCreationCommand(CancellationToken token = default) =>
+        ExecuteAsync(GetTableCreationString(), cancellationToken: token);
+
     #region Dispose
 
 #if !NETSTANDARD2_0

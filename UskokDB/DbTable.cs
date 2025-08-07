@@ -72,10 +72,10 @@ public class DbTable<T>(DbContext context) where T : class, new()
         foreach (var binding in initExpression.Bindings)
         {
             if (binding is not MemberAssignment assigment)
-                throw new ArgumentException("Bindings must be assigment (i.e. x => x.Name = \"New Name\")");
+                throw new UskokDbInvalidLinqBinding();
 
             if (!TypeMetadata<T>.NameToPropertyMap.TryGetValue(binding.Member.Name, out var propertyMetaData))
-                throw new Exception($"\"{binding.Member.Name}\" property is not mapped to db");
+                throw new UskokDbPropertyNotMapped(binding.Member.Name);
 
             var valueWritten = LinqToSql.CompileExpression<T>(DbContext, assigment.Expression);
             queryStringBuilder.Append($"{propertyMetaData.PropertyName}={valueWritten}");
@@ -107,7 +107,7 @@ public class DbTable<T>(DbContext context) where T : class, new()
                 throw new ArgumentException("Bindings must be assigment (i.e. x => x.Name = \"New Name\")");
 
             if (!TypeMetadata<T>.NameToPropertyMap.TryGetValue(binding.Member.Name, out var propertyMetaData))
-                throw new Exception($"\"{binding.Member.Name}\" property is not mapped to db");
+                throw new UskokDbPropertyNotMapped(binding.Member.Name);
 
             var valueWritten = LinqToSql.CompileExpression<T>(DbContext, assigment.Expression);
             queryStringBuilder.Append($"{propertyMetaData.PropertyName}={valueWritten}");
@@ -145,7 +145,7 @@ public class DbTable<T>(DbContext context) where T : class, new()
         var tableKeys = TypeMetadata<T>.Keys;
         var tableKeysCount = tableKeys.Count;
         if (tableKeysCount == 0)
-            throw new Exception("Cannot delete by primary key table has no primary keys");
+            throw new UskokDbTableNotPrimaryKey(TableName);
         builder.Append("DELETE FROM ");
         builder.Append(TableName);
         builder.Append(" WHERE ");

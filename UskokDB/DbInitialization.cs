@@ -89,6 +89,24 @@ internal static class DbInitialization
             { DbType.MySQL, "DATETIME" },
             { DbType.PostgreSQL, "TIMESTAMP" },
             { DbType.SQLite, "TEXT" }
+        },
+        [typeof(DateTime?)] = new Dictionary<DbType, string>
+        {
+            { DbType.MySQL, "DATETIME" },
+            { DbType.PostgreSQL, "TIMESTAMP" },
+            { DbType.SQLite, "TEXT" }
+        },
+        [typeof(Guid)] = new Dictionary<DbType, string>
+        {
+            { DbType.MySQL, "VARCHAR(36)" },
+            { DbType.PostgreSQL, "VARCHAR(36)" },
+            { DbType.SQLite, "VARCHAR(36)" }
+        },
+        [typeof(Guid?)] = new Dictionary<DbType, string>
+        {
+            { DbType.MySQL, "VARCHAR(36)" },
+            { DbType.PostgreSQL, "VARCHAR(36)" },
+            { DbType.SQLite, "VARCHAR(36)" }
         }
     };
 
@@ -257,12 +275,12 @@ internal static class DbInitialization
                     builder.Append(" SERIAL");
                     break;
                 case DbType.SQLite when !isPrimaryKey:
-                    throw new Exception($"Auto increment cannot be used without being the primary key in SQLite, '{tableName}' column '{property.PropertyName}'");
+                    throw new UskokDbException($"Auto increment cannot be used without being the primary key in SQLite, '{tableName}' column '{property.PropertyName}'");
                 case DbType.SQLite:
                     builder.Append(" AUTOINCREMENT");
                     break;
                 default:
-                    throw new Exception($"Unsupported DbType '{context.DbType}'");
+                    throw new UskokDbUnsupportedDbTypeException();
             }
         }
         else if(isUnique){

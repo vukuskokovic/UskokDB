@@ -71,7 +71,7 @@ public static class LinqToSql
             }
         }
 
-        throw new Exception($"{expression.GetType().FullName} expression is not supported");
+        throw new UskokDbInvalidLinqExpression(expression);
         
     }
 
