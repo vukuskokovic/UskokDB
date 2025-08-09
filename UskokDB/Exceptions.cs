@@ -27,3 +27,5 @@ public sealed class UskokDbTableNotPrimaryKey(string tableName) : UskokDbExcepti
 {
     public string TableName { get; set; } = tableName;
 }
+
+public sealed class UskokDbSqlDialectNotSet() : UskokDbException("Sql dialect is not set");

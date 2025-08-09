@@ -1,32 +1,44 @@
-﻿using MySqlConnector;
+﻿using System.Data.Common;
+using System.Diagnostics;
+using MySqlConnector;
 using System.Text.Json;
+using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Running;
 using pikac;
 using UskokDB;
 using UskokDB.Attributes;
 
-var context = new ShopDbContext();
+UskokDb.SetSqlDialect(SqlDialect.MySql);
+DbIOOptions.UseJsonForUnknownClassesAndStructs = true;
+ShopDbContext dbContext = new ShopDbContext();
+var cmd = dbContext.Table.BuildDeleteCommand((t) => t.FloatValue > 3 && (t.LongValue < 3 || t.CharValue == 'A'));
+Console.WriteLine(cmd.CommandText);
+//Console.WriteLine(JsonSerializer.Serialize(list));
 
 
-//[CompileSql]
-public static class ShopControllerQueries
+/*BenchmarkRunner.Run<BenchmarkTests>();
+[MemoryDiagnoser]
+public class BenchmarkTests
 {
-    public static Task<List<ParkingSession>> GetSessions(ShopDbContext context, String id) =>
-        context.TestTable.Where((session) => session.SessionId == Guid.Parse(id)).OrderBy("sessionId").GroupBy("sessionId").Limit(3).QueryAsync();
-}
-
-public static class ShopControllerQueriesGenerated
-{
-    public static Task<List<ParkingSession>> GetSessions(ShopDbContext context, String id) =>
-        context.QueryAsync<ParkingSession>(
-            $"SELECT * FROM tableName WHERE sessionId = {context.DbIo.WriteValue(id)} ORDER BY sessionId GROUP BY sessionId LIMIT 3");
-}
+    public ShopDbContext Context = new();
+    public BenchmarkTests()
+    {
+        DbIOOptions.UseJsonForUnknownClassesAndStructs = true;
+    }
 
 
+
+    [Benchmark]
+    public Task Fast()
+    {
+        return Context.Table.Where("1=1").QueryAsync();
+    }
+}*/
 public class ShopDbContext : DbContext
 {
-    public DbTable<ParkingSession> TestTable { get; }
-    public ShopDbContext() : base(DbType.MySQL,() => new MySqlConnection("Server=localhost;User ID=root;Database=test"))
+    public DbTable<TypesTable> Table { get; }
+    public ShopDbContext() : base(() => new MySqlConnection("Server=localhost;User ID=root;Database=test"))
     {
-        TestTable = new DbTable<ParkingSession>(this);
+        Table = new DbTable<TypesTable>(this);
     }
 }

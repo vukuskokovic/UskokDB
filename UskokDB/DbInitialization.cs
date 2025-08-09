@@ -10,103 +10,111 @@ namespace UskokDB;
 
 internal static class DbInitialization
 {
-    private static readonly Dictionary<Type, Dictionary<DbType, string>> TypeInDatabase = new()
+    static DbInitialization()
     {
-        [typeof(int)] = new Dictionary<DbType, string>
+        if (!UskokDb.SqlDialectSet)
         {
-            { DbType.MySQL, "INT" },
-            { DbType.PostgreSQL, "INTEGER" },
-            { DbType.SQLite, "INTEGER" }
+            throw new UskokDbSqlDialectNotSet();
+        }
+    }
+    
+    private static readonly Dictionary<Type, Dictionary<SqlDialect, string>> TypeInDatabase = new()
+    {
+        [typeof(int)] = new Dictionary<SqlDialect, string>
+        {
+            { SqlDialect.MySql, "INT" },
+            { SqlDialect.PostgreSql, "INTEGER" },
+            { SqlDialect.SqLite, "INTEGER" }
         },
-        [typeof(uint)] = new Dictionary<DbType, string>
+        [typeof(uint)] = new Dictionary<SqlDialect, string>
         {
-            { DbType.MySQL, "INT UNSIGNED" },
-            { DbType.PostgreSQL, "INTEGER" },
-            { DbType.SQLite, "INTEGER" }
+            { SqlDialect.MySql, "INT UNSIGNED" },
+            { SqlDialect.PostgreSql, "INTEGER" },
+            { SqlDialect.SqLite, "INTEGER" }
         },
-        [typeof(short)] = new Dictionary<DbType, string>
+        [typeof(short)] = new Dictionary<SqlDialect, string>
         {
-            { DbType.MySQL, "SMALLINT" },
-            { DbType.PostgreSQL, "SMALLINT" },
-            { DbType.SQLite, "INTEGER" }
+            { SqlDialect.MySql, "SMALLINT" },
+            { SqlDialect.PostgreSql, "SMALLINT" },
+            { SqlDialect.SqLite, "INTEGER" }
         },
-        [typeof(ushort)] = new Dictionary<DbType, string>
+        [typeof(ushort)] = new Dictionary<SqlDialect, string>
         {
-            { DbType.MySQL, "SMALLINT UNSIGNED" },
-            { DbType.PostgreSQL, "SMALLINT" },
-            { DbType.SQLite, "INTEGER" }
+            { SqlDialect.MySql, "SMALLINT UNSIGNED" },
+            { SqlDialect.PostgreSql, "SMALLINT" },
+            { SqlDialect.SqLite, "INTEGER" }
         },
-        [typeof(long)] = new Dictionary<DbType, string>
+        [typeof(long)] = new Dictionary<SqlDialect, string>
         {
-            { DbType.MySQL, "BIGINT" },
-            { DbType.PostgreSQL, "BIGINT" },
-            { DbType.SQLite, "INTEGER" }
+            { SqlDialect.MySql, "BIGINT" },
+            { SqlDialect.PostgreSql, "BIGINT" },
+            { SqlDialect.SqLite, "INTEGER" }
         },
-        [typeof(ulong)] = new Dictionary<DbType, string>
+        [typeof(ulong)] = new Dictionary<SqlDialect, string>
         {
-            { DbType.MySQL, "BIGINT UNSIGNED" },
-            { DbType.PostgreSQL, "BIGINT" },
-            { DbType.SQLite, "INTEGER" }
+            { SqlDialect.MySql, "BIGINT UNSIGNED" },
+            { SqlDialect.PostgreSql, "BIGINT" },
+            { SqlDialect.SqLite, "INTEGER" }
         },
-        [typeof(float)] = new Dictionary<DbType, string>
+        [typeof(float)] = new Dictionary<SqlDialect, string>
         {
-            { DbType.MySQL, "FLOAT" },
-            { DbType.PostgreSQL, "REAL" },
-            { DbType.SQLite, "REAL" }
+            { SqlDialect.MySql, "FLOAT" },
+            { SqlDialect.PostgreSql, "REAL" },
+            { SqlDialect.SqLite, "REAL" }
         },
-        [typeof(double)] = new Dictionary<DbType, string>
+        [typeof(double)] = new Dictionary<SqlDialect, string>
         {
-            { DbType.MySQL, "DOUBLE" },
-            { DbType.PostgreSQL, "DOUBLE PRECISION" },
-            { DbType.SQLite, "REAL" }
+            { SqlDialect.MySql, "DOUBLE" },
+            { SqlDialect.PostgreSql, "DOUBLE PRECISION" },
+            { SqlDialect.SqLite, "REAL" }
         },
-        [typeof(decimal)] = new Dictionary<DbType, string>
+        [typeof(decimal)] = new Dictionary<SqlDialect, string>
         {
-            { DbType.MySQL, "DECIMAL" },
-            { DbType.PostgreSQL, "NUMERIC" },
-            { DbType.SQLite, "NUMERIC" }
+            { SqlDialect.MySql, "DECIMAL" },
+            { SqlDialect.PostgreSql, "NUMERIC" },
+            { SqlDialect.SqLite, "NUMERIC" }
         },
-        [typeof(byte)] = new Dictionary<DbType, string>
+        [typeof(byte)] = new Dictionary<SqlDialect, string>
         {
-            { DbType.MySQL, "TINYINT" },
-            { DbType.PostgreSQL, "SMALLINT" },
-            { DbType.SQLite, "INTEGER" }
+            { SqlDialect.MySql, "TINYINT" },
+            { SqlDialect.PostgreSql, "SMALLINT" },
+            { SqlDialect.SqLite, "INTEGER" }
         },
-        [typeof(bool)] = new Dictionary<DbType, string>
+        [typeof(bool)] = new Dictionary<SqlDialect, string>
         {
-            { DbType.MySQL, "TINYINT(1)" },
-            { DbType.PostgreSQL, "BOOLEAN" },
-            { DbType.SQLite, "INTEGER" }
+            { SqlDialect.MySql, "TINYINT(1)" },
+            { SqlDialect.PostgreSql, "BOOLEAN" },
+            { SqlDialect.SqLite, "INTEGER" }
         },
-        [typeof(char)] = new Dictionary<DbType, string>
+        [typeof(char)] = new Dictionary<SqlDialect, string>
         {
-            { DbType.MySQL, "CHAR(1)" },
-            { DbType.PostgreSQL, "CHAR(1)" },
-            { DbType.SQLite, "TEXT" }
+            { SqlDialect.MySql, "CHAR(1)" },
+            { SqlDialect.PostgreSql, "CHAR(1)" },
+            { SqlDialect.SqLite, "TEXT" }
         },
-        [typeof(DateTime)] = new Dictionary<DbType, string>
+        [typeof(DateTime)] = new Dictionary<SqlDialect, string>
         {
-            { DbType.MySQL, "DATETIME" },
-            { DbType.PostgreSQL, "TIMESTAMP" },
-            { DbType.SQLite, "TEXT" }
+            { SqlDialect.MySql, "DATETIME" },
+            { SqlDialect.PostgreSql, "TIMESTAMP" },
+            { SqlDialect.SqLite, "TEXT" }
         },
-        [typeof(DateTime?)] = new Dictionary<DbType, string>
+        [typeof(DateTime?)] = new Dictionary<SqlDialect, string>
         {
-            { DbType.MySQL, "DATETIME" },
-            { DbType.PostgreSQL, "TIMESTAMP" },
-            { DbType.SQLite, "TEXT" }
+            { SqlDialect.MySql, "DATETIME" },
+            { SqlDialect.PostgreSql, "TIMESTAMP" },
+            { SqlDialect.SqLite, "TEXT" }
         },
-        [typeof(Guid)] = new Dictionary<DbType, string>
+        [typeof(Guid)] = new Dictionary<SqlDialect, string>
         {
-            { DbType.MySQL, "VARCHAR(36)" },
-            { DbType.PostgreSQL, "VARCHAR(36)" },
-            { DbType.SQLite, "VARCHAR(36)" }
+            { SqlDialect.MySql, "VARCHAR(36)" },
+            { SqlDialect.PostgreSql, "VARCHAR(36)" },
+            { SqlDialect.SqLite, "VARCHAR(36)" }
         },
-        [typeof(Guid?)] = new Dictionary<DbType, string>
+        [typeof(Guid?)] = new Dictionary<SqlDialect, string>
         {
-            { DbType.MySQL, "VARCHAR(36)" },
-            { DbType.PostgreSQL, "VARCHAR(36)" },
-            { DbType.SQLite, "VARCHAR(36)" }
+            { SqlDialect.MySql, "VARCHAR(36)" },
+            { SqlDialect.PostgreSql, "VARCHAR(36)" },
+            { SqlDialect.SqLite, "VARCHAR(36)" }
         }
     };
 
@@ -140,7 +148,7 @@ internal static class DbInitialization
         var properties = (List<TypeMetadataProperty>)MetadataType.MakeGenericType(tableType).GetProperty("Properties")!.GetValue(null)!;
         builder.Append("CREATE TABLE IF NOT EXISTS ");
         builder.Append(tableName);
-        builder.Append(" ");
+        builder.Append(' ');
         builder.Append('(');
         for (var i = 0; i < properties.Count; i++)
         {
@@ -209,13 +217,13 @@ internal static class DbInitialization
             return;
         }
 
-        if (TypeInDatabase.TryGetValue(type, out var dbMappings) && dbMappings.TryGetValue(context.DbType, out var dbTypeString))
+        if (TypeInDatabase.TryGetValue(type, out var dbMappings) && dbMappings.TryGetValue(UskokDb.SqlDialect, out var dbTypeString))
         {
             builder.Append(dbTypeString);
             return;
         }
 
-        if (context.DbIoOptions.ParameterConverters.TryGetValue(type, out var converter))
+        if (DbIOOptions.ParameterConverters.TryGetValue(type, out var converter))
         {
             maxLength = converter.GetCustomMaxLength();
             customTypeName = converter.GetCustomTypeInTable();
@@ -223,7 +231,7 @@ internal static class DbInitialization
             return;
         }
 
-        if (context.DbIo.ShouldJsonBeUsedForType(type))
+        if (DbIO.ShouldJsonBeUsedForType(type))
         {
             builder.Append("JSON");
             return;
@@ -266,17 +274,17 @@ internal static class DbInitialization
         AddPropertyTableType(context, tableName, builder, property.Type, maxLengthAttr?.Length, out var addNotNull);
         if(isAutoIncrement)
         {
-            switch (context.DbType)
+            switch (UskokDb.SqlDialect)
             {
-                case DbType.MySQL:
+                case SqlDialect.MySql:
                     builder.Append(" AUTO_INCREMENT");
                     break;
-                case DbType.PostgreSQL:
+                case SqlDialect.PostgreSql:
                     builder.Append(" SERIAL");
                     break;
-                case DbType.SQLite when !isPrimaryKey:
+                case SqlDialect.SqLite when !isPrimaryKey:
                     throw new UskokDbException($"Auto increment cannot be used without being the primary key in SQLite, '{tableName}' column '{property.PropertyName}'");
-                case DbType.SQLite:
+                case SqlDialect.SqLite:
                     builder.Append(" AUTOINCREMENT");
                     break;
                 default:

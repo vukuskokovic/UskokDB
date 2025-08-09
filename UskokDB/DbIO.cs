@@ -1,28 +1,30 @@
-﻿using System;
+﻿﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Globalization;
 using System.Text;
 
 namespace UskokDB;
 
-public class DbIOOptions
+public static class DbIOOptions
 {
     #if !NETSTANDARD2_0
-    public Func<object?, string?> JsonWriter { get; set; } = (value) => value == null? null : System.Text.Json.JsonSerializer.Serialize(value);
-    public Func<string?, Type, object?> JsonReader { get; set; } = (jsonStr, type) => jsonStr == null? null : System.Text.Json.JsonSerializer.Deserialize(jsonStr, type);
+    public static Func<object?, string?> JsonWriter { get; set; } = (value) => value == null? null : System.Text.Json.JsonSerializer.Serialize(value);
+    public static Func<string?, Type, object?> JsonReader { get; set; } = (jsonStr, type) => jsonStr == null? null : System.Text.Json.JsonSerializer.Deserialize(jsonStr, type);
     #else
-    //To support netstandard 2.0 since system.text.json is not available then(newtonsoft.json should be used)
-    public Func<object?, string?>? JsonWriter { get; set; } = null;
-    public Func<string?, Type, object?>? JsonReader { get; set; } = null;
+    public static Func<object?, string?>? JsonWriter { get; set; } = null;
+    public static Func<string?, Type, object?>? JsonReader { get; set; } = null;
     #endif
     
-    public bool UseJsonForUnknownClassesAndStructs { get; set; } = false;
-    public Dictionary<Type, IParameterConverter> ParameterConverters { get; } = [];
+    public static bool UseJsonForUnknownClassesAndStructs { get; set; } = false;
+    public static Dictionary<Type, IColumnValueConverter> ParameterConverters { get; } = [];
 }
 
-public class DbIO(DbContext dbContext)
+public static class DbIO
 {
     private static readonly HashSet<Type> PrimitiveTypes = [
         typeof(char),
@@ -52,209 +54,158 @@ public class DbIO(DbContext dbContext)
         typeof(decimal?),
         typeof(DateTime),
         typeof(DateTime?),
+        typeof(Guid),
+        typeof(Guid?)
     ];
 
-    public bool ShouldJsonBeUsedForType(Type type)
+    public static bool ShouldJsonBeUsedForType(Type type)
     {
-        return dbContext.DbIoOptions.UseJsonForUnknownClassesAndStructs && (type.IsClass || type.IsArray || type.IsValueType || type.IsEnum);
+        return DbIOOptions.UseJsonForUnknownClassesAndStructs && (type.IsClass || type.IsArray || type.IsValueType || type.IsEnum);
     }
-
-    private const string NullValue = "NULL";
-    private const string EmptyString = "''";
+    
     /// <summary>
-    /// Writes a value as a part of an sql request
+    /// Writes a value as a part of a sql request
     /// </summary>
     /// <param name="value">The value of a parameter</param>
-    /// <returns>A sql like string of a object also clears all prohibited characters in case of a string</returns>
+    /// <returns>A sql like string of an object also clears all prohibited characters in case of a string</returns>
 
-    public string WriteValue(object? value)
+    public static object? WriteValue(object? value)
     {
-        if (value is null) return NullValue;
-
-        if (value is string str)
-        {
-            return $"'{str.Replace("'", "''")}'";
-        }
-
-        if (value is Guid guid)
-        {
-            return $"'{guid}'";
-        }
+        if (value is null) return null;
         
-        //all generic types
-        if (value is byte or short or ushort or int or uint or long or ulong or float or double or char or decimal)
-        {
-            return Convert.ToString(value!, CultureInfo.InvariantCulture)!;
-        }
-
-        if (value is bool b)
-        {
-            return b ? "1" : "0";
-        }
-
-        if (value is DateTime dateTime)
-        {
-            return $"'{dateTime:yyyy-MM-dd HH:mm:ss.fff}'";
-        }
-
         
-
         var type = value.GetType();
+        if (PrimitiveTypes.Contains(type))
+        {
+            return value;
+        }
+        
         if (type.IsEnum)
         {
-            return Convert.ChangeType(value, type.GetEnumUnderlyingType())?.ToString() ?? NullValue;
+            return Convert.ChangeType(value, type.GetEnumUnderlyingType());
         }
 
-        if (dbContext.DbIoOptions.ParameterConverters.TryGetValue(type, out var converter))
+        if (DbIOOptions.ParameterConverters.TryGetValue(type, out var converter))
         {
             return WriteValue(converter.Write(value));
         }
 
         if (ShouldJsonBeUsedForType(type))
         {
-            if (dbContext.DbIoOptions.JsonWriter == null) 
+            if (DbIOOptions.JsonWriter == null) 
                 throw new UskokDbIoException("Configured to use json for unknown types and structs but json writer was null");
 
-            return WriteValue(dbContext.DbIoOptions.JsonWriter(value));
+            return WriteValue(DbIOOptions.JsonWriter(value));
         }
 
-        return value?.ToString() ?? NullValue;
+        return value.ToString();
     }
 
-    public object? ReadValue(object? value, Type type)
+    public static DbPopulateParamsResult PopulateParams(string query, object? paramObj)
     {
-        if (value is null or DBNull) return null;
-
-        if (dbContext.DbIoOptions.ParameterConverters.TryGetValue(type, out var parameterConverter))
+        var result = new DbPopulateParamsResult()
         {
-            return parameterConverter.Read(value);
-        }
-
-        if (PrimitiveTypes.Contains(type)) return value;
-
-        if (type == typeof(Guid) || type == typeof(Guid?))
-        {
-            if (value is not string str)
-                throw new UskokDbIoException("Expected string for guid but value is not string");
-            
-            return Guid.Parse(str);
-        }
-        
-        if (type.IsEnum) return value;
-
-        if (!ShouldJsonBeUsedForType(type)) return value;
-
-        if (dbContext.DbIoOptions.JsonReader == null) throw new UskokDbIoException("Configured to use json for unknown types and structs but json reader was null");
-        if (value is not string jsonStr)
-            throw new UskokDbIoException($"Error reading type {type.FullName} did not get json string from the database");
-
-        return dbContext.DbIoOptions.JsonReader(jsonStr, type);
-
+            CompiledText = query,
+            Params = GetParamsList(paramObj)
+        };
+        return result;
     }
-
-    public Dictionary<string, string> GetParamsHashmap(object? obj)
+    private static List<DbParam> GetParamsList(object? obj)
     {
-        Dictionary<string, string> values = [];
-        if (obj == null) return values;
+        List<DbParam> paramList = [];
+        if (obj == null) return paramList;
         var type = obj.GetType();
         var properties = type.GetProperties();
 
         foreach (var property in properties)
         {
             var value = property.GetValue(obj);
-            values.Add(property.Name, WriteValue(value));
+            var propertyName = property.Name;
+            //this can never happen but why not
+            if (propertyName.Length == 0)
+                throw new UskokDbException("Wtf is this shit propertyName length 0");
+
+            if (propertyName[0] != '@')
+            {
+                propertyName = $"@{propertyName}";
+            }
+            
+            paramList.Add(new DbParam()
+            {
+                Name = propertyName,
+                Value = value
+            });
         }
 
-        return values;
+        return paramList;
     }
     
-    public string PopulateParams(string query, object? paramsObj)
+    internal static T Read<T>(DbDataReader reader) where T : class, new()
     {
-        if (paramsObj == null) return query;
+        T valueToBePopulated = new();
 
-        #if !NETSTANDARD2_0
-        var querySpan = query.AsSpan();
-        #endif
-        
-        var paramsHashMap = GetParamsHashmap(paramsObj);
-        StringBuilder builder = new();
-        var startCursor = 0;
-        var readingParam = false;
-        for (var cursor = startCursor; cursor <= query.Length; cursor++)
+        if (valueToBePopulated is IDbManualReader fastReader)
         {
-            var isEnd = cursor == query.Length;
-            if (isEnd)
-            {
-                if (!readingParam)
-                {
-                    goto WriteCurrent;
-                }
-                goto WriteParam;
-            }
-            #if !NETSTANDARD2_0
-            char currentChar = querySpan[cursor];
-            #else
-            char currentChar = query[cursor];
-            #endif
-            
-            if (currentChar == '@')
-            {
-                readingParam = true;
-                goto WriteCurrent;
-            }
-            
-            if (readingParam && !char.IsLetter(currentChar) && !char.IsDigit(currentChar) && currentChar != '_')
-            {
-                readingParam = false;
-                goto WriteParam;
-            }
-
-            continue;
-        //Write the current text
-        WriteCurrent:
-            //Ignore if on current character
-            if (startCursor == cursor) continue;
-            
-            #if !NETSTANDARD2_0
-            builder.Append(querySpan.Slice(startCursor, cursor - startCursor));
-            #else
-            builder.Append(query.Substring(startCursor, cursor - startCursor));
-            #endif
-            startCursor = cursor;
-            continue;
-
-        //Write the parameter
-        WriteParam:
-            //Ignore the first character since it is going to be an '@'
-            
-            #if !NETSTANDARD2_0
-            var paramName = querySpan.Slice(startCursor + 1, cursor - startCursor - 1).ToString();
-            #else
-            var paramName = query.Substring(startCursor + 1, cursor - startCursor - 1);
-            #endif
-            
-            if (!paramsHashMap.TryGetValue(paramName, out var paramValue)) paramValue = NullValue;
-
-            startCursor = cursor;
-            builder.Append(paramValue);
-            continue;
+            fastReader.ReadValue(reader);
         }
-
-
-        return builder.ToString();
+        else
+        {
+            var len = TypeMetadata<T>.Properties.Count;
+            var values = new object[len];
+            var objectsRead = reader.GetValues(values);
+            if (len != objectsRead) throw new UskokDbIoException($"Values read is not same as objectsRead(read:{objectsRead}!=expected:{len})");
+            for (var ordinal = 0; ordinal < len; ordinal++)
+            {
+                var property = TypeMetadata<T>.Properties[ordinal];
+                ReadValue(values[ordinal], property, valueToBePopulated);
+            }
+        }
+        return valueToBePopulated;
     }
 
-    internal T Read<T>(IDataReader reader) where T : class, new()
+    private static void ReadValue<T>(object? value, TypeMetadataProperty property, T objectHolder) where T : class
     {
-        T newValue = new();
-
-        foreach (var property in TypeMetadata<T>.Properties)
+        if (value is null or DBNull)
         {
-            int ordinal = reader.GetOrdinal(property.PropertyName);
-            var value = reader.GetValue(ordinal);
-            property.PropertyInfo.SetValue(newValue, ReadValue(value, property.Type));
+            property.SetterMethod(objectHolder, null);
+            return;
         }
 
-        return newValue;
+        if (property.IsGuidOrNullableGuid)
+        {
+            property.SetterMethod(objectHolder, Guid.Parse((string)value));
+            return;
+        }
+
+        if (property.IsCharOrNullableChar)
+        {
+            property.SetterMethod(objectHolder, char.Parse((string)value));
+            return;
+        }
+
+        var type = property.Type;
+        if (PrimitiveTypes.Contains(type))
+        {
+            property.SetterMethod(objectHolder, value);
+            return;
+        }
+
+        if (DbIOOptions.ParameterConverters.TryGetValue(type, out var parameterConverter))
+        {
+            property.SetterMethod(objectHolder, parameterConverter.Read(value));
+            return;
+        }
+
+        if (type.IsEnum || !ShouldJsonBeUsedForType(type))
+        {
+            property.SetterMethod(objectHolder, value);
+            return;
+        }
+
+        if (DbIOOptions.JsonReader == null) throw new UskokDbIoException("Configured to use json for unknown types and structs but json reader was null");
+        if (value is not string jsonStr)
+            throw new UskokDbIoException($"Error reading type {type.FullName} did not get json string from the database");
+
+        property.SetterMethod(objectHolder, DbIOOptions.JsonReader(jsonStr, type));
     }
 }

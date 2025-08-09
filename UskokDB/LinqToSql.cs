@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -10,12 +11,17 @@ namespace UskokDB;
 
 public static class LinqToSql
 {
-    public static string Convert<T>(DbContext context, Expression<Func<T, bool>> expression) where T : class, new()
+    public static DbPopulateParamsResult Convert<T>(Expression<Func<T, bool>> expression, List<DbParam>? paramsList = null) where T : class, new()
     {
-        return CompileExpression<T>(context, expression.Body);
+        var result = new DbPopulateParamsResult()
+        {
+            Params = paramsList ?? []
+        };
+        result.CompiledText = CompileExpression<T>(expression.Body, result.Params);
+        return result;
     }
 
-    internal static string CompileExpression<T>(DbContext context, Expression expression) where T : class, new()
+    public static string CompileExpression<T>(Expression expression, List<DbParam> paramList) where T : class, new()
     {
         if(expression is BinaryExpression binaryExpression)
         {
@@ -37,9 +43,9 @@ public static class LinqToSql
                 ExpressionType.Divide => " / ",
                 _ => " JOIN "
             };
-            return $"({string.Join(joiner, CompileExpression<T>(context, binaryExpression.Left), CompileExpression<T>(context, binaryExpression.Right))})";
+            return $"({string.Join(joiner, CompileExpression<T>(binaryExpression.Left, paramList), CompileExpression<T>(binaryExpression.Right, paramList))})";
         }
-        else if(expression is UnaryExpression unaryExpression)
+        if(expression is UnaryExpression unaryExpression)
         {
             string joiner = unaryExpression.NodeType switch
             {
@@ -47,13 +53,13 @@ public static class LinqToSql
                 ExpressionType.Convert => "",
                 _ => $" UNKNOWN JOINER({unaryExpression.NodeType}) "
             };
-            return $"{joiner}{CompileExpression<T>(context, unaryExpression.Operand)}";
+            return $"{joiner}{CompileExpression<T>(unaryExpression.Operand, paramList)}";
         }
-        else if(expression is ConstantExpression constantExpression)
+        if(expression is ConstantExpression constantExpression)
         {
-            return context.DbIo.WriteValue(constantExpression.Value);
+            return AddParam(paramList, constantExpression.Value);
         }
-        else if(expression is MemberExpression memberExpression)
+        if(expression is MemberExpression memberExpression)
         {
             var memberInfo = memberExpression.Member;
             var memberType = memberInfo.DeclaringType;
@@ -65,14 +71,27 @@ public static class LinqToSql
             }
             else
             {
-                if(memberType == null) return context.DbIo.WriteValue(null);
+                var paramValue = memberType == null ? null : GetMemberValue(memberExpression);
 
-                return context.DbIo.WriteValue(GetMemberValue(memberExpression));
+                return AddParam(paramList, paramValue);
             }
         }
 
         throw new UskokDbInvalidLinqExpression(expression);
         
+    }
+
+    private static string AddParam(List<DbParam> paramList, object? value)
+    {
+        int paramIndex = paramList.Count;
+        var paramName = $"@p_{paramIndex}";
+        DbParam newParam = new DbParam()
+        {
+            Name = paramName,
+            Value = value
+        };
+        paramList.Add(newParam);
+        return paramName;
     }
 
     static object? GetMemberValue(MemberExpression memberExp)

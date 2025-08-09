@@ -1,13 +1,15 @@
+using System.Data.Common;
+using UskokDB;
 using UskokDB.Attributes;
 using UskokDB.Generator;
 
 namespace pikac;
-[TableName("testTableee")]
-public class ParkingSession
+
+[TableName("typesTable")]
+public class TypesTable
 {
     [Key]
-    public Guid SessionId {get;set;}
-    public string Name { get; set; }
-    public int Age { get; set; }
+    public long LongValue { get; set; }
+    public char? CharValue { get; set; }
+    public float FloatValue { get; set; }
 }
-

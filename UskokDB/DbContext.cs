@@ -10,12 +10,7 @@ using System.Threading.Tasks;
 
 namespace UskokDB;
 
-public enum DbType
-{
-    MySQL,
-    PostgreSQL,
-    SQLite
-}
+
 
 public abstract class DbContext : IDisposable
 #if !NETSTANDARD2_0
@@ -23,34 +18,31 @@ public abstract class DbContext : IDisposable
 #endif
 {
     public string GetTableCreationString() => DbInitialization.CreateDbString(this);
-    public DbIOOptions DbIoOptions { get; }
-    public DbIO DbIo { get; }
     public DbConnection DbConnection { get; }
-    public DbType DbType { get; }
-    public DbContext(DbType type, Func<DbConnection> connectionFactory, DbIOOptions? ioOptions = null)
+    public DbContext(Func<DbConnection> connectionFactory)
     {
-        DbType = type;
         DbConnection = connectionFactory();
-        DbIo = new DbIO(this);
-        if (ioOptions == null)
-        {
-            _defaultOptions = new DbIOOptions();
-            DbIoOptions = _defaultOptions;
-        }
-        else DbIoOptions = ioOptions;
     }
     
-    internal readonly StringBuilder queueQueriesBuilder = new();
-    private static DbIOOptions? _defaultOptions;
-
-    internal async Task<DbCommand> CreateCommand(string commandString, object? properties, CancellationToken cancellationToken = default)
+    private readonly List<DbCommand> _queuedCommands = [];
+    
+    public DbCommand CreateCommandFromParams(string commandString, object? properties)
+    {
+        var populateResult = DbIO.PopulateParams(commandString, properties);
+        return populateResult.CreateCommandWithConnection(DbConnection);
+    }
+    public DbCommand CreateCommand(string commandString)
+    {
+        var cmd =  DbConnection.CreateCommand();
+        cmd.CommandText = commandString;
+        return cmd;
+    }
+    private Task OpenConnectionIfNotOpen(CancellationToken cancellationToken = default)
     {
         if (DbConnection.State != ConnectionState.Open)
-            await DbConnection.OpenAsync(cancellationToken);
+            return DbConnection.OpenAsync(cancellationToken);
 
-        var command = DbConnection.CreateCommand();
-        command.CommandText = DbIo.PopulateParams(commandString, properties);
-        return command;
+        return Task.CompletedTask;
     }
 
     #region Instant Queries
@@ -58,86 +50,171 @@ public abstract class DbContext : IDisposable
     #if !NETSTANDARD2_0
     public async IAsyncEnumerable<T> QueryAsyncEnumerable<T>(string commandString, object? properties, [EnumeratorCancellation]CancellationToken cancellationToken) where T : class, new()
     {
-        await using var command = await CreateCommand(commandString, properties, cancellationToken);
+        await OpenConnectionIfNotOpen(cancellationToken);
+        await using var command = CreateCommandFromParams(commandString, properties);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while(await reader.ReadAsync(cancellationToken))
         {
-            yield return DbIo.Read<T>(reader);
+            yield return DbIO.Read<T>(reader);
         }
     }
-    #endif
-    public async Task<List<T>> QueryAsync<T>(string commandString, object? properties = null, CancellationToken cancellationToken = default) where T : class, new()
+    internal async IAsyncEnumerable<T> QueryAsyncEnumerable<T>(DbCommand command, [EnumeratorCancellation]CancellationToken cancellationToken) where T : class, new()
     {
-        #if !NETSTANDARD2_0
-        await 
-        #endif
-        using var command = await CreateCommand(commandString, properties, cancellationToken);
-        
-        #if !NETSTANDARD2_0
-        await 
-        #endif
-        using var reader = await command.ExecuteReaderAsync(cancellationToken);
-        
-        List<T> list = [];
-        while (await reader.ReadAsync(cancellationToken))
+        try
         {
-            list.Add(DbIo.Read<T>(reader));
+            await OpenConnectionIfNotOpen(cancellationToken);
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                yield return DbIO.Read<T>(reader);
+            }
         }
+        finally
+        {
+            await command.DisposeAsync();
+        }
+    }
+    
+    
+    #endif
+    public Task<List<T>> QueryAsync<T>(string commandString, object? properties = null, CancellationToken cancellationToken = default) where T : class, new()
+        => QueryAsync<T>(CreateCommandFromParams(commandString, properties), cancellationToken);
+    
 
-        return list;
-    }
-    public async Task<T?> QuerySingleAsync<T>(string commandString, object? properties = null, CancellationToken cancellationToken = default) where T : class, new()
+    public async Task<List<T>> QueryAsync<T>(DbCommand command, CancellationToken cancellationToken = default) where T : class, new()
     {
-        #if !NETSTANDARD2_0
-        await 
-        #endif
-        using var command = await CreateCommand(commandString, properties, cancellationToken);
-        
-        #if !NETSTANDARD2_0
-        await 
-        #endif
-        using var reader = await command.ExecuteReaderAsync(cancellationToken);
-        if (!reader.HasRows || !await reader.ReadAsync(cancellationToken)) return null;
+        try
+        {
+            await OpenConnectionIfNotOpen(cancellationToken);
+#if !NETSTANDARD2_0
+            await
+#endif
+                using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            
+            List<T> list = [];
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                list.Add(DbIO.Read<T>(reader));
+            }
 
-        return DbIo.Read<T>(reader);
-    }
-    public async Task<T?> ExecuteScalar<T>(string commandString, object? properties = null, CancellationToken cancellationToken = default)
-    {
-        #if !NETSTANDARD2_0
-        await
-        #endif
-        using var command = await CreateCommand(commandString, properties, cancellationToken);
-        
-        var result = await command.ExecuteScalarAsync(cancellationToken);
-        if (result is null or DBNull) return default;
-        var readValue = DbIo.ReadValue(result, typeof(T))!;
-        return (T)Convert.ChangeType(readValue, typeof(T));
-    }
-    public async Task<int> ExecuteAsync(string commandString, object? properties = null, CancellationToken cancellationToken = default)
-    {
+            return list;
+        }
+        finally
+        {
         #if NETSTANDARD2_0
-        using var command = await CreateCommand(commandString, properties, cancellationToken);
+            command.Dispose();
         #else
-        await using var command = await CreateCommand(commandString, properties, cancellationToken);
+            await command.DisposeAsync();
         #endif
-        return await command.ExecuteNonQueryAsync(cancellationToken);
+        }
     }
+    
+    
+    
+    public Task<T?> QuerySingleAsync<T>(string commandString, object? properties = null, CancellationToken cancellationToken = default) where T : class, new()
+        => QuerySingleAsync<T>(CreateCommandFromParams(commandString, properties), cancellationToken);
+    
 
-    public async Task<bool> ExistsAsync(string commandString, object? properties = null,
-        CancellationToken cancellationToken = default)
+    public async Task<T?> QuerySingleAsync<T>(DbCommand command,
+        CancellationToken cancellationToken = default) where T : class, new()
     {
+        try
+        {
+            await OpenConnectionIfNotOpen(cancellationToken);
 #if !NETSTANDARD2_0
-        await
+            await
 #endif
-        using var command = await CreateCommand(commandString, properties, cancellationToken);
-        
-#if !NETSTANDARD2_0
-        await
-#endif
-        using var reader = await command.ExecuteReaderAsync(cancellationToken);
+                using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            if (!reader.HasRows || !await reader.ReadAsync(cancellationToken)) return null;
 
-        return reader.HasRows;
+            return DbIO.Read<T>(reader);
+        }
+        finally
+        {
+#if NETSTANDARD2_0
+            command.Dispose();
+#else
+            await command.DisposeAsync();
+#endif
+        }
     }
+    
+    
+    public Task<T?> ExecuteScalar<T>(string commandString, object? properties = null, CancellationToken cancellationToken = default)
+        => ExecuteScalar<T?>(CreateCommandFromParams(commandString, properties), cancellationToken);
+    
+    public async Task<T?> ExecuteScalar<T>(DbCommand command, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await OpenConnectionIfNotOpen(cancellationToken);
+            var result = await command.ExecuteScalarAsync(cancellationToken);
+            if (result is null or DBNull) return default;
+            return (T)Convert.ChangeType(result, typeof(T));
+        }
+        finally
+        {
+#if NETSTANDARD2_0
+            command.Dispose();
+#else
+            await command.DisposeAsync();
+#endif
+        }
+    }
+    
+    
+    
+    
+    public Task<int> ExecuteAsync(string commandString, object? properties = null, CancellationToken cancellationToken = default)
+    {
+        var command = CreateCommandFromParams(commandString, properties);
+        return ExecuteAsync(command, cancellationToken);
+    }
+
+    public async Task<int> ExecuteAsync(DbCommand command, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await OpenConnectionIfNotOpen(cancellationToken);
+
+            return await command.ExecuteNonQueryAsync(cancellationToken);
+        }
+        finally
+        {
+            #if NETSTANDARD2_0
+            command.Dispose();
+            #else
+            await command.DisposeAsync();
+            #endif
+        }
+    }
+    
+    
+    
+
+    public Task<bool> ExistsAsync(string commandString, object? properties = null, CancellationToken cancellationToken = default) 
+        => ExistsAsync(CreateCommandFromParams(commandString, properties), cancellationToken);
+    public async Task<bool> ExistsAsync(DbCommand command, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+#if !NETSTANDARD2_0
+            await
+#endif
+                using var reader = await command.ExecuteReaderAsync(cancellationToken);
+
+            return reader.HasRows;
+        }
+        finally
+        {
+#if NETSTANDARD2_0
+            command.Dispose();
+#else
+            await command.DisposeAsync();
+#endif
+        }
+    }
+    
 
     #endregion
 
@@ -146,29 +223,43 @@ public abstract class DbContext : IDisposable
     /// <summary>
     /// Clears the current queue
     /// </summary>
-    public void ClearQueue() => queueQueriesBuilder.Clear();
-
-    /// <summary>
-    /// Builds the current command queue
-    /// </summary>
-    /// <returns>The compiled command from all the queues</returns>
-    // ReSharper disable once MemberCanBePrivate.Global
-    public string? BuildQueue()
+#if NETSTANDARD2_0
+    public void ClearQueue()
     {
-        return queueQueriesBuilder.Length == 0 ? null : queueQueriesBuilder.ToString();
+        foreach (var cmd in _queuedCommands)
+        {
+            cmd.Dispose();
+        }
+        _queuedCommands.Clear();
+    }
+    #else
+    public async Task ClearQueue()
+    {
+        if (_queuedCommands.Count == 0) return;
+        foreach (var cmd in _queuedCommands)
+        {
+            await cmd.DisposeAsync();
+        }
+        _queuedCommands.Clear();
+    }
+    #endif
+    
+    internal void AppendQueueCmd(string cmd)
+    {
+        var command = DbConnection.CreateCommand();
+        command.CommandText = cmd;
+        _queuedCommands.Add(command);
+    }
+    
+    internal void AppendQueueCmd(DbCommand cmd)
+    {
+        _queuedCommands.Add(cmd);
     }
 
-    internal void AppendQueryCmd(string cmd, bool appendSemiColor = true)
+    public void AppendExecute(string query, object? paramsObject = null)
     {
-        queueQueriesBuilder.Append(cmd);
-        if (appendSemiColor) queueQueriesBuilder.Append(';');
-    }
-
-    public void Execute(string query, object? paramsObject = null)
-    {
-        var finalQuery = DbIo.PopulateParams(query, paramsObject);
-        AppendQueryCmd(finalQuery, finalQuery[finalQuery.Length-1] != ';');
-        
+        var result = DbIO.PopulateParams(query, paramsObject);
+        AppendQueueCmd(result.CreateCommandWithConnection(DbConnection));
     }
     
     /// <summary>
@@ -177,11 +268,38 @@ public abstract class DbContext : IDisposable
     /// <remarks>IF ONE QUERY FAILS ALL QUERIES FAIL</remarks>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public Task ExecuteQueue(CancellationToken cancellationToken = default)
+    public async Task ExecuteQueueAsync(CancellationToken cancellationToken = default)
     {
-        var command = BuildQueue();
-        queueQueriesBuilder.Clear();
-        return command == null ? Task.CompletedTask : ExecuteAsync(command, cancellationToken: cancellationToken);
+        try
+        {
+            await OpenConnectionIfNotOpen(cancellationToken);
+            
+#if NETSTANDARD2_0
+        using DbTransaction dbTransaction = DbConnection.BeginTransaction();
+#else
+            await using DbTransaction dbTransaction = await DbConnection.BeginTransactionAsync(cancellationToken);
+#endif
+
+            foreach (var command in _queuedCommands)
+            {
+                command.Transaction = dbTransaction;
+                await command.ExecuteNonQueryAsync(cancellationToken);
+            }
+
+#if NETSTANDARD2_0
+        dbTransaction.Commit();
+#else
+            await dbTransaction.CommitAsync(cancellationToken);
+#endif
+        }
+        finally
+        {
+            #if NETSTANDARD2_0
+            ClearQueue();
+            #else
+            await ClearQueue();
+            #endif
+        }
     }
     #endregion
 
@@ -192,9 +310,21 @@ public abstract class DbContext : IDisposable
     #region Dispose
 
 #if !NETSTANDARD2_0
-    public ValueTask DisposeAsync() => DbConnection.DisposeAsync();
+    public async ValueTask DisposeAsync()
+    {
+        await ClearQueue();
+        await DbConnection.DisposeAsync();
+    }
 #endif
-    public void Dispose() => DbConnection.Dispose();
+    public void Dispose()
+    {
+        #if NETSTANDARD2_0
+        ClearQueue();
+        #else
+        ClearQueue().RunSynchronously();
+        #endif
+        DbConnection.Dispose();
+    }
 
     #endregion
     
