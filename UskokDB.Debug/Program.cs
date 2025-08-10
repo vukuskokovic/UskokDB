@@ -12,7 +12,12 @@ UskokDb.SetSqlDialect(SqlDialect.MySql);
 DbIOOptions.UseJsonForUnknownClassesAndStructs = true;
 ShopDbContext dbContext = new ShopDbContext();
 var cmd = dbContext.Table.BuildDeleteCommand((t) => t.FloatValue > 3 && (t.LongValue < 3 || t.CharValue == 'A'));
-Console.WriteLine(cmd.CommandText);
+cmd.Disposed += (_, _) =>
+{
+    Console.WriteLine("dispoed");
+};
+
+await dbContext.ExecuteAsync(cmd);
 //Console.WriteLine(JsonSerializer.Serialize(list));
 
 

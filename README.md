@@ -1,76 +1,174 @@
-##### * *For UskokDB 1.0-2.x look at older commits* *
-
 # UskokDB
-A .NET ORM designed for quick and simple development. Supports **MySQL**, **SQLite**, and **PostgreSQL**
-#### Connection drivers are not included in the package but any ADO.NET is supported
+#### UskokDB is a .NET orm designed with simplicity and ease of use in mind its great for idea testing fast prototyping and could even be production ready. It supports MySql, SqlLite, PostgreSql with full table creation strings, LinqToSql, and normal raw queries. You can define your tables and in 2 lines of codes generate your full db, you can write WHERE queries with linq in seconds and get the list of items from a generic function, you dont have to worry abount reading from db or writing, inserting is a one-liner. Updating/Deleting data with linq also is very easy. Let's get started.
 
-## **DbContext**
-### This class will contain all of your tables in the DB, the db type(MYSql, SQLIte, PostgreSQL) and the ADO.NET connection factory
-### DbContext can create a creating string for your database using reflections
+## Getting started
+### First you have to define your tables
+```csharp
 
-## **DbTable&lt;T&gt;**
-### Contains functions to help query the table
-# Attributes
-### **NotMappedAttribute** - used to describe property that is not mapped to the db
-### **KeyAttribute** - used to describe primary keys in the table(can be multiple in the same type)
-### **MaxLengthAttribute** - used to turn string from TEXT type in db to VARCHAR([specifiedLength])
-### **ForeignKeyAttribute&lt;T&gt;** - Points to the primary key in another table
-### **ColumnNotNullAttribute** - marks the column as *NOT NULL*
-### **AutoIncrementAttribute** - Adds auto increment to the column
-### **TableNameAttribute** - Used for the actuall table class just overwrites the default name for the table(default is the type name)
-### **ColumnAttribute** - Used for giving a custom name for the column (default is lower case the property name)
-### Example usage
-
-## There is somewhat limited custom Linq to Sql implementation
-
-## NOTE: Only async queries are supported for now
-
-```cs
-public class ShopDbContext : DbContext
-{
-    public DbTable<Shop> ShopTable { get; }
-    // In the constructor of the context you need to provide the db type and the connection factory (use your respective driver for your DB)
-    public ShopDbContext() : base(DbType.MySQL, () => new MySqlConnection("Server=localhost;User ID=root;Database=test"))
-    {
-        ShopTable = new DbTable<Shop>(this);
-    }
-}
-
-[TableName("shop")]
-public class Shop
+[TableName("people")] // This is not required the default name would be 'Person'
+public class Person
 {
     [Key]
-    public int Id { get; set; }
-    [MaxLength(20)]
+    public Guid PersonId { get; set; }
     public string Name { get; set; }
-    public string ChainName {get;set;}
-    public int Personel { get; set; }
+    public int Age { get; set; }
+    public DateTime TimeOfBirth { get; set; }
 }
-
-ShopDbContext context = new ShopDbContext();
-
-List<Shop> over10Personel = await context.ShopTable.Where(shop => shop.Personel > 10).QueryAsync();
-Shop withId = await context.ShopTable.Where(shop => shop.Id == 3 && shop.Name == "<Some shop name>").QuerySingleAsync();
-Shop stringQuery = await context.ShopTable.Where("id=@Id", new {Id=3}).QuerySingleAsync();
-List<Shop> groupAndOrder = await context.ShopTable.OrderBy("personel ASC", "id DESC").GroupBy("chainName");
-// There is also support for IAsyncEnumerable
-await foreach(var shop in context.ShopTable.Where(shop => shop.Personel > 2).QueryAsyncEnumerable())
-{
-    Console.WriteLine(shop.Name);
-}
- 
-// For now linq to sql and inline queries such as OrderBy(...).Limit(..).Where(..)
-// Are compiled every time they are executed if you want the fastest perfomance you could compile it only once
-
-string compiledQuery = context.ShopTable.Where(shop => shop.Personel > 30).Limit(10).OrderBy("personel DESC").CompileQuery();
-List<Shop> first10Above30Personel = await context.QueryAsync<Shop>(compiledQuery);
-// SELECT * FROM shop WHERE personel > 30 ORDER BY personel DESC LIMIT 10
-Console.WriteLine(compiledQuery);
-
-
-// In case you have query parameters
-string compiledQuery = context.ShopTable.Where("personel > @Personel").Limit(10).OrderBy("personel DESC").CompileQuery();
-// SELECT * FROM shop WHERE personel > @Personel ORDER BY personel DESC LIMIT 10
-Console.WriteLine(compiledQuery);
-List<Shop> first10Above30Personel = await context.QueryAsync<Shop>(compiledQuery, new { Personel = 30 });
 ```
+### Next you define a DbContext
+```csharp
+public class MyDbContext : DbContext
+{
+    public DbTable<Person> PeopleTable { get; }
+                                          //Any ADO.NET driver will work
+    public MyDbContext() : base(() => new MySqlConnection("<your_connection_string>"))
+    {
+        PeopleTable = new DbTable<Person>(this);
+    }
+}
+```
+### Now here is an example of how it would look like if you were to use it ASP.NET
+```csharp
+//In your Startup.cs/Program.cs
+builder.Services.AddTransient<MyDbContext>((_) => new MyDbContext());
+
+//And here is an example get request
+
+[HttpGet("adults")]
+public async Task<IActionResult> GetAllAdultsAsync(MyDbContext dbContext)
+{
+    List<PeopleTable> allAdults = await dbContext.PeopleTable.Where(person => person.Age >= 18).QueryAsync();
+    return Ok(allAdults);
+}
+```
+### Or here is a more detailed request
+```csharp
+//I know this is not how it should be done but for the sake of simplicity
+[HttpGet("withName/{name}/{age:int}")]
+public async Task<IActionResult> GetWithParamsAsync(MyDbContext dbContext, string name, int age)
+{
+    List<PeopleTable> people = await dbContext.PeopleTable.Where(person => person.Age == age && person.Name == name).QueryAsync();
+    return Ok(people);
+}
+```
+## Table generation
+I will use the same table & context from above<br/>
+In order to get table generation you need to specify the sql language
+```csharp
+//In program.cs/startup.cs
+UskokDb.SqlDialect = SqlDialect.MySql;
+builder.Services.AddTransient<MyDbContext>((_) => new MyDbContext());
+
+await using(var context = new MyDbContext())
+{
+    await context.ExecuteTableCreationCommand();
+}
+
+//You can also get the string like this
+string fullCommandText = context.GetTableCreationString();
+```
+### This will execute this command
+```mysql
+CREATE TABLE IF NOT EXISTS people (personId VARCHAR(36), name TEXT, age INT, timeOfBirth DATETIME, PRIMARY KEY (personId));
+```
+### If you were to have more tables, more tables would be added to this
+## Table attributes
+1. <b>TableNameAttribute</b> - Used on the table class to specify the name manually
+2. <b>ColumnAttribute</b> - Used to specify the name of the column/property manually
+3. <b>NotMappedAttribute</b> - To tell the framework to not store/read this property
+4. <b>AutoIncrementAttribute</b> - Pretty self-explanatory
+5. <b>MaxLengthAttribute</b> - Only for strings to specify the max length(VARCHAR)
+6. <b>KeyAttribute</b> - Used for primary keys
+7. <b>ForeignKeyAttribute(T)</b> - Used for foreign keys the generic type is another table and the string paramter is the column name
+8. <b>UniqueAttribute</b> - Used for sql unique attribute
+## Inserting
+```csharp
+await dbContext.PeoplTable.InsertAsync(new Person()
+{
+    PersonId = Guid.NewGuid(),
+    Age = 20,
+    Name = "Charlie",
+    TimeOfBirth = new DateTime(2005, 1, 2)
+});
+
+//You can also insert an array
+Person[] people = GeneratePeopleArrayFromSomewhere();
+await dbContext.PeoplTable.InsertAsync(people);
+```
+## Deleting/Update
+```csharp
+//Updating without row context
+await dbContext.PeoplTable.UpdateAsync(
+    //This is the update statement
+    () => new Person()
+    {
+        Age = 20
+    },
+    //This is the where statement
+    (person) => person.Name == "SomeNameYouWantToChangeAge"
+);
+
+//Updating with row context
+await dbContext.PeoplTable.UpdateAsync(
+    //This is the update statement
+    (person) => new Person()
+    {
+        Age = person.Age + 1
+    },
+    //This is the where statement
+    (person) => person.PersonId = BirthdayPersonId
+);
+
+//Deleting
+await dbContext.PeoplTable.DeleteAsync((person) => person.PersonId == personToDeleteId);
+/*
+BE AWARE YOU IF THE WHERE PART OF THE DELETE STATEMENT IS LEFT AS NULL IT WILL DELETE THE WHOLE TABLE
+*/
+```
+## Multiple commands
+### This allows you to batch more commands in one transaction like delete insert and update all at once
+### These commands are executed in the order you add them to the list
+```csharp
+dbContext.PeopleTable.AppendDelete((person) => person.PersonId == somePersonId);
+dbContext.PeopleTable.AppendInsert(newPerson);
+dbContext.PeopleTable.AppendUpdate(() => new Person(){Age = 22}, (p) => p.PersonId = anotherPersonId);
+await dbContext.ExecuteQueueAsync();
+```
+## Json support(to be desired)
+In short, it works will get the job done for simple stuff
+```csharp
+class SomeDto
+{
+    public string Text {get;set;}
+}
+
+class SomeTable
+{
+    public SomeDto SomeDto {get;set;}
+    public SomeDto[] SomeDtoArray {get;set;}
+}
+
+//Before using json you first must enable it
+DbIOOptions.UseJsonForUnknownClassesAndStructs = true;
+//Then when inserting/reading this values will be treated as strings in db and will be serilized/deserilized on input/output
+//You can also override the default json parser(mandatory for .netstandard 2.0)
+//Default parser is system.text.json
+DbIOOptions.JsonWriter = (someObject) => (string)Myjsonparser(someObject);
+DbIOOptions.JsonReader = (jsonStr, expectedType) => MyjsonReader(jsonStr, expectedType);
+```
+## Custom reader/writer
+### You can make a custom type that will be stored to your liking in the db here's how
+```csharp
+int WritingFunc(SomeClass value) => value.GetIntToBeWrittenToDb();
+SomeClass ReadingFunc(int valueFromDb) => SomeClass.FromDb(valueFromDb);
+
+
+DbIOOptions.ParameterConverters[typeof(SomeClass)] = 
+                                //This is your type you want to add custom reading/writing to
+new DefaultColumnValueConverter<SomeClass, 
+                                //This is the type that will be stored in the db
+                                int>(WritingFunc, ReadingFunc);
+```
+### There are also two optional arguments maxLength, and typeName
+1. maxLength - Used if the db column type is string to specify the max length of the string
+2. typeName - In case you want to set the custom like "TIMESTAMP" or something
