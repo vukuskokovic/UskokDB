@@ -13,3 +13,11 @@ public class TypesTable
     public char? CharValue { get; set; }
     public float FloatValue { get; set; }
 }
+
+
+[GenerateRequests]
+public static class TestRequests
+{
+    public static Task<List<TypesTable>> GetTables(ShopDbContext dbContext, float floatVal) =>
+        dbContext.QueryAsync<TypesTable>("SELECT * FROM typesTable WHERE FloatValue = @FloatVal", new { FloatVal = floatVal});
+}

@@ -198,6 +198,7 @@ public abstract class DbContext : IDisposable
     {
         try
         {
+            await OpenConnectionIfNotOpen(cancellationToken);
 #if !NETSTANDARD2_0
             await
 #endif
