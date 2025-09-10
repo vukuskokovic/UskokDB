@@ -5,19 +5,16 @@ using UskokDB.Generator;
 
 namespace pikac;
 
-[TableName("typesTable")]
-public class TypesTable
+public class PKeyTable
 {
     [Key]
-    public long LongValue { get; set; }
-    public char? CharValue { get; set; }
-    public float FloatValue { get; set; }
+    public double? Id { get; set; }
 }
 
-
-[GenerateRequests]
-public static class TestRequests
+public class FKeyTable
 {
-    public static Task<List<TypesTable>> GetTables(ShopDbContext dbContext, float floatVal) =>
-        dbContext.QueryAsync<TypesTable>("SELECT * FROM typesTable WHERE FloatValue = @FloatVal", new { FloatVal = floatVal});
+    public int? OnlyUpdate { get; set; }
+    public int OnlyDelete { get; set; }
+    public int? None { get; set; }
+    public int Both { get; set; }
 }

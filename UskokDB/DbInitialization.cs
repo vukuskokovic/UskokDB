@@ -139,11 +139,18 @@ internal static class DbInitialization
         return DbTableType.MakeGenericType(tableType).GetProperty("TableName", BindingFlags.Static | BindingFlags.Public)?.GetValue(null) as string ?? tableType.Name; 
     }
 
+    private class ForeignKeyData
+    {
+        public string ColumnName = null!;
+        public string TableName = null!;
+        public string ForeignColumnName = null!;
+        public ForeignKeyAction OnDelete = ForeignKeyAction.DbDefault;
+        public ForeignKeyAction OnUpdate = ForeignKeyAction.DbDefault;
+    }
     private static void AddTableString(DbContext context, StringBuilder builder, Type tableType)
     {
         List<string> primaryKeys = [];
-        // t1: columnName, t2: tableName, t3: foreignColumnName
-        List<Tuple<string, string, string>> foreignKeys = [];
+        List<ForeignKeyData> foreignKeys = [];
         var tableName = GetTableName(tableType);
         var properties = (List<TypeMetadataProperty>)MetadataType.MakeGenericType(tableType).GetProperty("Properties")!.GetValue(null)!;
         builder.Append("CREATE TABLE IF NOT EXISTS ");
@@ -174,10 +181,57 @@ internal static class DbInitialization
         if(foreignKeys.Count > 0)
         {
             builder.Append(", ");
-            builder.Append(string.Join(",", foreignKeys.Select(foreignKey => $"FOREIGN KEY ({foreignKey.Item1}) REFERENCES {foreignKey.Item2}({foreignKey.Item3})")));
+            int l = foreignKeys.Count;
+            for (int i = 0; i < l; i++)
+            {
+                AddForeignKeyString(builder, foreignKeys[i]);
+                if (i + 1 != l)
+                {
+                    builder.Append(", ");
+                }
+            }
         }
 
         builder.Append(");\n");
+    }
+
+    private static void AddForeignKeyString(StringBuilder builder, ForeignKeyData fkData)
+    {
+        builder.Append("FOREIGN KEY (");
+        builder.Append(fkData.ColumnName);
+        builder.Append(") REFERENCES ");
+        builder.Append(fkData.TableName);
+        builder.Append('(');
+        builder.Append(fkData.ForeignColumnName);
+        builder.Append(')');
+        if (fkData.OnDelete != ForeignKeyAction.DbDefault)
+        {
+            builder.Append(" ON DELETE ");
+            AddForeignKeyAction(builder, fkData.OnDelete);
+        }
+
+        if (fkData.OnUpdate != ForeignKeyAction.DbDefault)
+        {
+            builder.Append(" ON UPDATE ");
+            AddForeignKeyAction(builder, fkData.OnUpdate);
+        }
+    }
+
+    private static void AddForeignKeyAction(StringBuilder builder, ForeignKeyAction action)
+    {
+        builder.Append(action switch
+        {
+            ForeignKeyAction.Cascade => "CASCADE",
+            ForeignKeyAction.NoAction =>  "NO ACTION",
+            ForeignKeyAction.SetNull => "SET NULL",
+            ForeignKeyAction.SetDefault => "SET DEFAULT",
+            ForeignKeyAction.Restrict =>  "RESTRICT",
+            // Again will never happen but this is my error, so I should follow the string below
+            ForeignKeyAction.DbDefault => "How did this even happen",
+            // Will never happen unless someone does stupid shit like (ForeignKeyAction)10
+            // In which case they should follow the string below
+            _ => "Kill yourself"
+        });
     }
 
     private static void AddPropertyTableType(DbContext context, string tableName, StringBuilder builder, Type type, int? maxLength, out bool addNotNull, string? customTypeName = null)
@@ -240,7 +294,7 @@ internal static class DbInitialization
         throw new InvalidOperationException($"Could not get type in table ({tableName}) of type {type}");
     }
 
-    private static void AddPropertyString(DbContext context, string tableName, TypeMetadataProperty property, StringBuilder builder, out bool isPrimaryKey, out Tuple<string, string, string>? foreignKey)
+    private static void AddPropertyString(DbContext context, string tableName, TypeMetadataProperty property, StringBuilder builder, out bool isPrimaryKey, out ForeignKeyData? foreignKey)
     {
         foreignKey = null;
         isPrimaryKey = false;
@@ -264,7 +318,18 @@ internal static class DbInitialization
                 var foreignTableType = type.GenericTypeArguments[0];
                 var foreignTableName = GetTableName(foreignTableType);
                 if (type.GetProperty("ColumnName")?.GetValue(attr) is not string foreignColumnName) continue;
-                foreignKey = new Tuple<string, string, string>(property.PropertyName, foreignTableName, foreignColumnName);
+                var onDelete = (ForeignKeyAction)type.GetProperty("OnDelete")!.GetValue(attr)!;
+                var onUpdate = (ForeignKeyAction)type.GetProperty("OnUpdate")!.GetValue(attr)!;
+                
+                
+                foreignKey = new ForeignKeyData()
+                {
+                    ColumnName = property.PropertyName,
+                    TableName = foreignTableName,
+                    ForeignColumnName = foreignColumnName,
+                    OnDelete = onDelete,
+                    OnUpdate = onUpdate,
+                };
             }
         }
 

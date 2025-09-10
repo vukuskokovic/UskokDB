@@ -11,11 +11,11 @@
 		<PackageTags>db, database, orm, mysql</PackageTags>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<Authors>Vuk Uskokovic</Authors>
-		<Version>4.0.0</Version>
+		<Version>4.1.0</Version>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<PackageReleaseNotes>Many changes and optimizations documentation to come</PackageReleaseNotes>
+		<PackageReleaseNotes>Added actions OnDelete and OnUpdate for foreign keys</PackageReleaseNotes>
 		<Description>A c# orm made for simple and fast usage.
-Mainly made to be used with UskokDB.MySql package.</Description>
+Supports linq to sql, table mapping and creation, generic type reading and much more.</Description>
 		<TargetFrameworks>net8.0;net9.0;netstandard2.0</TargetFrameworks>
 	</PropertyGroup>
 	<ItemGroup>

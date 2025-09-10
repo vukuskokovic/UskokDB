@@ -263,12 +263,10 @@ public class DbTable<T>(DbContext context) where T : class, new()
 
         #if !NETSTANDARD2_0
         await using var command = DbContext.CreateCommand(finalQuery);
-        await using var reader = await command.ExecuteReaderAsync(cancellationToken: cancellationToken);
         #else
         using var command = DbContext.CreateCommand(finalQuery);
-        using var reader = await command.ExecuteReaderAsync(cancellationToken: cancellationToken);
         #endif
-        return reader.HasRows;
+        return await DbContext.ExistsAsync(command,  cancellationToken: cancellationToken);
     }
 
 

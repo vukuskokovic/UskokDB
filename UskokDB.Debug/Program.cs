@@ -9,15 +9,8 @@ using UskokDB;
 using UskokDB.Attributes;
 
 UskokDb.SetSqlDialect(SqlDialect.MySql);
-DbIOOptions.UseJsonForUnknownClassesAndStructs = true;
-ShopDbContext dbContext = new ShopDbContext();
-var cmd = dbContext.Table.BuildDeleteCommand((t) => t.FloatValue > 3 && (t.LongValue < 3 || t.CharValue == 'A'));
-cmd.Disposed += (_, _) =>
-{
-    Console.WriteLine("dispoed");
-};
-
-await dbContext.ExecuteAsync(cmd);
+ShopDbContext context = new ShopDbContext();
+Console.WriteLine(context.GetTableCreationString());
 //Console.WriteLine(JsonSerializer.Serialize(list));
 
 
@@ -41,9 +34,11 @@ public class BenchmarkTests
 }*/
 public class ShopDbContext : DbContext
 {
-    public DbTable<TypesTable> Table { get; }
+    public DbTable<PKeyTable> PkeyTable { get; }
+    public DbTable<FKeyTable> FkeyTable { get; }
     public ShopDbContext() : base(() => new MySqlConnection("Server=localhost;User ID=root;Database=test"))
     {
-        Table = new DbTable<TypesTable>(this);
+        PkeyTable = new DbTable<PKeyTable>(this);
+        FkeyTable = new DbTable<FKeyTable>(this);
     }
 }

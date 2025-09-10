@@ -26,6 +26,8 @@ public sealed class KeyAttribute : Attribute
 [AttributeUsage(AttributeTargets.Property)]
 public sealed class ForeignKeyAttribute<T>(string columnName) : Attribute where T : class, new()
 {
+    public ForeignKeyAction OnDelete { get; set; } = ForeignKeyAction.DbDefault;
+    public ForeignKeyAction OnUpdate { get; set; } = ForeignKeyAction.DbDefault;
     public string ColumnName { get; } = columnName;
 }
 
@@ -38,4 +40,14 @@ public sealed class UniqueAttribute : Attribute
 public sealed class TableNameAttribute(string name) : Attribute
 {
     public string Name { get; } = name;
+}
+
+public enum ForeignKeyAction : byte
+{
+    Cascade = 0,
+    SetNull = 1,
+    SetDefault = 2,
+    Restrict = 3,
+    NoAction = 4, 
+    DbDefault = 5
 }
