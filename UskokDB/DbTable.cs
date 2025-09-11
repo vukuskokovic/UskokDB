@@ -32,18 +32,18 @@ public class DbTable<T>(DbContext context) where T : class, new()
     }
 
     #region Query builders
-    public DbCommand BuildInsertCommand(T item)
+    public DbCommand BuildInsertCommand(string initCommand, T item)
     {
-        StringBuilder builder = new(InsertInitString);
+        StringBuilder builder = new(initCommand);
         var command = DbContext.DbConnection.CreateCommand();
         int i = 0;
         AddInsertItem(command, item, builder, ref i);
         command.CommandText = builder.ToString();
         return command;
     }
-    public DbCommand BuildInsertCommand(IEnumerable<T> items)
+    public DbCommand BuildInsertCommand(string initCommand, IEnumerable<T> items)
     {
-        StringBuilder builder = new(InsertInitString);
+        StringBuilder builder = new(initCommand);
         var command = DbContext.DbConnection.CreateCommand();
         int index = 0;
         foreach(var item in items)
@@ -199,7 +199,6 @@ public class DbTable<T>(DbContext context) where T : class, new()
             builder.Append(" AND ");
             i++;
         }
-        
 
         builder.Append(';');
     }
@@ -225,11 +224,11 @@ public class DbTable<T>(DbContext context) where T : class, new()
     
     #endregion
 
-    public Task InsertAsync(T item, CancellationToken cancellationToken = default) => DbContext.ExecuteAsync(BuildInsertCommand(item), cancellationToken: cancellationToken);
-    public Task InsertAsync(params T[] items) => DbContext.ExecuteAsync(BuildInsertCommand(items));
-    public Task InsertAsync(CancellationToken cancellationToken, params T[] items) => DbContext.ExecuteAsync(BuildInsertCommand(items), cancellationToken: cancellationToken);
-    public Task InsertAsync(IEnumerable<T> items, CancellationToken cancellationToken = default) => DbContext.ExecuteAsync(BuildInsertCommand(items), cancellationToken: cancellationToken);
-
+    public Task InsertAsync(T item, CancellationToken cancellationToken = default) => DbContext.ExecuteAsync(BuildInsertCommand(InsertInitString, item), cancellationToken: cancellationToken);
+    public Task InsertAsync(params T[] items) => DbContext.ExecuteAsync(BuildInsertCommand(InsertInitString, items));
+    public Task InsertAsync(CancellationToken cancellationToken, params T[] items) => DbContext.ExecuteAsync(BuildInsertCommand(InsertInitString, items), cancellationToken: cancellationToken);
+    public Task InsertAsync(IEnumerable<T> items, CancellationToken cancellationToken = default) => DbContext.ExecuteAsync(BuildInsertCommand(InsertInitString, items), cancellationToken: cancellationToken);
+    
     public QueryBuilder<T> Where(Expression<Func<T, bool>> expression) => new QueryBuilder<T>(this).Where(expression);
     public QueryBuilder<T> Where(string query, object? paramsObject = null) => new QueryBuilder<T>(this).Where(query, paramsObject);
     public QueryBuilder<T> OrderBy(params string[] columns) => new QueryBuilder<T>(this).OrderBy(columns);
@@ -254,9 +253,11 @@ public class DbTable<T>(DbContext context) where T : class, new()
     public async Task<bool> ExistsAsync(Expression<Func<T, bool>>? where, CancellationToken cancellationToken = default){
         var queryStringBuilder = new StringBuilder("SELECT 1 FROM ");
         queryStringBuilder.Append(TableName);
+        DbPopulateParamsResult? dbPopulateParamsResult = null;
         if(where != null){
             queryStringBuilder.Append(" WHERE ");
-            queryStringBuilder.Append(LinqToSql.Convert<T>(where));
+            dbPopulateParamsResult = LinqToSql.Convert(where);
+            queryStringBuilder.Append(dbPopulateParamsResult.CompiledText);
         }
 
         var finalQuery = queryStringBuilder.ToString();
@@ -266,13 +267,16 @@ public class DbTable<T>(DbContext context) where T : class, new()
         #else
         using var command = DbContext.CreateCommand(finalQuery);
         #endif
+        
+        dbPopulateParamsResult?.AddParamsToCommand(command);
+        
         return await DbContext.ExistsAsync(command,  cancellationToken: cancellationToken);
     }
 
 
-    public void AppendInsert(T item) => DbContext.AppendQueueCmd(BuildInsertCommand(item));
-    public void AppendInsert(IEnumerable<T> items) => DbContext.AppendQueueCmd(BuildInsertCommand(items));
-    public void AppendInsert(params T[] items) => DbContext.AppendQueueCmd(BuildInsertCommand(items));
+    public void AppendInsert(T item) => DbContext.AppendQueueCmd(BuildInsertCommand(InsertInitString, item));
+    public void AppendInsert(IEnumerable<T> items) => DbContext.AppendQueueCmd(BuildInsertCommand(InsertInitString, items));
+    public void AppendInsert(params T[] items) => DbContext.AppendQueueCmd(BuildInsertCommand(InsertInitString, items));
     public void AppendUpdate(Expression<Func<T>> update, Expression<Func<T, bool>>? where = null) =>
         DbContext.AppendQueueCmd(BuildUpdateCommand(update, where));
     public void AppendUpdate(Expression<Func<T, T>> update, Expression<Func<T, bool>>? where = null) =>

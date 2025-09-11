@@ -19,6 +19,12 @@ public class DbPopulateParamsResult
     {
         var command = dbConnection.CreateCommand();
         command.CommandText = CompiledText;
+        AddParamsToCommand(command);
+        return command;
+    }
+
+    public void AddParamsToCommand(DbCommand command)
+    {
         foreach (var param in Params)
         {
             var dbParameter = command.CreateParameter();
@@ -26,7 +32,5 @@ public class DbPopulateParamsResult
             dbParameter.Value = DbIO.WriteValue(param.Value);
             command.Parameters.Add(dbParameter);
         }
-
-        return command;
     }
 }

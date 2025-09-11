@@ -10,7 +10,10 @@ using UskokDB.Attributes;
 
 UskokDb.SetSqlDialect(SqlDialect.MySql);
 ShopDbContext context = new ShopDbContext();
-Console.WriteLine(context.GetTableCreationString());
+await context.ExecuteTableCreationCommand();
+
+var isPhoneUsed = await context.Users.ExistsAsync(x =>
+    x.PhoneRegionalCode == "" && x.PhoneNumber == "");
 //Console.WriteLine(JsonSerializer.Serialize(list));
 
 
@@ -35,10 +38,10 @@ public class BenchmarkTests
 public class ShopDbContext : DbContext
 {
     public DbTable<PKeyTable> PkeyTable { get; }
-    public DbTable<FKeyTable> FkeyTable { get; }
+    public DbTable<User> Users { get; }
     public ShopDbContext() : base(() => new MySqlConnection("Server=localhost;User ID=root;Database=test"))
     {
         PkeyTable = new DbTable<PKeyTable>(this);
-        FkeyTable = new DbTable<FKeyTable>(this);
+        Users = new DbTable<User>(this);
     }
 }
