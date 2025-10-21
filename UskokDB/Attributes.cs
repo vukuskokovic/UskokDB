@@ -42,6 +42,12 @@ public sealed class TableNameAttribute(string name) : Attribute
     public string Name { get; } = name;
 }
 
+[AttributeUsage(AttributeTargets.Property)]
+public sealed class OverrideDbTypeAttribute(string dbType) : Attribute
+{
+    public string DbType { get; } = dbType;
+}
+
 public enum ForeignKeyAction : byte
 {
     Cascade = 0,

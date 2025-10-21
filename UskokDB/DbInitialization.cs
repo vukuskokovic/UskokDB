@@ -244,15 +244,15 @@ internal static class DbInitialization
             type = underlyingType;
         }
 
+        if (customTypeName != null)
+        {
+            builder.Append(customTypeName);
+            return;
+        }
+        
         if (type == typeof(string))
         {
             addNotNull = false;
-            if (customTypeName != null)
-            {
-                builder.Append(customTypeName);
-                return;
-            }
-
             if (maxLength.HasValue)
             {
                 builder.Append("VARCHAR(");
@@ -303,6 +303,7 @@ internal static class DbInitialization
         bool isAutoIncrement = false;
         bool isUnique = false;
         bool isNotNull = false;
+        string? typeOverride = null;
         foreach(var attr in propertyInfo.GetCustomAttributes())
         {
             if (attr is MaxLengthAttribute max) maxLengthAttr = max;
@@ -310,6 +311,7 @@ internal static class DbInitialization
             else if (attr is KeyAttribute) isPrimaryKey = true;
             else if (attr is ColumnNotNullAttribute) isNotNull = true;
             else if (attr is UniqueAttribute) isUnique = true;
+            else if(attr is OverrideDbTypeAttribute overrideDbType) typeOverride = overrideDbType.DbType;
             else
             {
                 var type = attr.GetType();   
@@ -336,7 +338,7 @@ internal static class DbInitialization
         builder.Append(property.PropertyName);
         builder.Append(' ');
 
-        AddPropertyTableType(context, tableName, builder, property.Type, maxLengthAttr?.Length, out var addNotNull);
+        AddPropertyTableType(context, tableName, builder, property.Type, maxLengthAttr?.Length, out var addNotNull, typeOverride);
         if(isAutoIncrement)
         {
             switch (UskokDb.SqlDialect)
