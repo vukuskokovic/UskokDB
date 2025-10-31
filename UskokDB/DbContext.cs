@@ -322,7 +322,7 @@ public abstract class DbContext : IDisposable
         #if NETSTANDARD2_0
         ClearQueue();
         #else
-        ClearQueue().RunSynchronously();
+        ClearQueue().GetAwaiter().GetResult();
         #endif
         DbConnection.Dispose();
     }

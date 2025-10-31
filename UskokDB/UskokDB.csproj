@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<Nullable>enable</Nullable>
 		<LangVersion>preview</LangVersion>
@@ -11,15 +11,14 @@
 		<PackageTags>db, database, orm, mysql</PackageTags>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<Authors>Vuk Uskokovic</Authors>
-		<Version>4.1.2</Version>
+		<Version>4.1.3</Version>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<PackageReleaseNotes>Added option to override db type on a property usefull for stuff like BIGTEXT</PackageReleaseNotes>
+		<PackageReleaseNotes>Hotfix for running sync dispose on &gt; .net standrad 2.0</PackageReleaseNotes>
 		<Description>A c# orm made for simple and fast usage.
 Supports linq to sql, table mapping and creation, generic type reading and much more.</Description>
 		<TargetFrameworks>net8.0;net9.0;netstandard2.0</TargetFrameworks>
 	</PropertyGroup>
 	<ItemGroup>
-	
 		<None Include="..\README.md">
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
