@@ -16,7 +16,7 @@ Console.WriteLine(JsonSerializer.Serialize(allUsers));
 
 var command = await dbContext.Users.QueryWhere("userId IN @UserIds", new
 {
-    UserIds = DbQueryHelpers.In(Guid.Parse("0d9315ad-40a7-4a34-b1fc-72e2d03a12ad"))
+    UserIds = (new [] {Guid.Parse("0d9315ad-40a7-4a34-b1fc-72e2d03a12ad")}).ToList()
 });
 Console.WriteLine(JsonSerializer.Serialize(command));
 

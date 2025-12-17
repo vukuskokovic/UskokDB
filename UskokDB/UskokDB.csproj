@@ -11,7 +11,7 @@
 		<PackageTags>db, database, orm, mysql</PackageTags>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<Authors>Vuk Uskokovic</Authors>
-		<Version>4.1.5</Version>
+		<Version>4.1.6</Version>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageReleaseNotes>Added some helpers for queries</PackageReleaseNotes>
 		<Description>A c# orm made for simple and fast usage.

@@ -1,5 +1,6 @@
 ﻿﻿using System;
-using System.Collections.Generic;
+ using System.Collections;
+ using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
@@ -140,12 +141,13 @@ public static class DbIO
 
     private static void AddParamsForProperty(ref string query, List<DbParam> paramList, string propertyName, object? value)
     {
-        if (value is DbQueryHelperInResult queryHelperInResult)
+        Console.WriteLine(value is IEnumerable);
+        if (value is IEnumerable enumerable)
         {
             StringBuilder builder = new();
             builder.Append('(');
             int i = 0;
-            foreach (var inItemValue in queryHelperInResult.Values)
+            foreach (var inItemValue in enumerable)
             {
                 var itemName = $"{propertyName}_in_{i++}";
                 builder.Append(itemName);
