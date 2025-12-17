@@ -48,6 +48,25 @@ public sealed class OverrideDbTypeAttribute(string dbType) : Attribute
     public string DbType { get; } = dbType;
 }
 
+[AttributeUsage(AttributeTargets.Property)]
+public sealed class DbEnumAttribute(params string[] values) : Attribute
+{
+    public string[] Values { get; set; } = values;
+}
+
+/*[AttributeUsage(AttributeTargets.Property)]
+public sealed class IndexAttribute(bool isUnique = false) : Attribute
+{
+    public bool IsUnique { get; set; } = isUnique;
+}
+
+[AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
+public sealed class CompositeIndexAttribute(params string[] columns) : Attribute
+{
+    public bool IsUnique { get; set; }
+    public string[] Columns { get; set; } = columns;
+}*/
+
 public enum ForeignKeyAction : byte
 {
     Cascade = 0,

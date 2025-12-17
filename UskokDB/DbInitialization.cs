@@ -147,8 +147,21 @@ internal static class DbInitialization
         public ForeignKeyAction OnDelete = ForeignKeyAction.DbDefault;
         public ForeignKeyAction OnUpdate = ForeignKeyAction.DbDefault;
     }
-    private static void AddTableString(DbContext context, StringBuilder builder, Type tableType)
+
+    private class IndexData
     {
+        public bool IsUnique = false;
+        public string Name = null!;
+        public string ColumnName = null!;
+    }
+    /// <summary>
+    /// The main function for the table creation
+    /// </summary>
+    /// <param name="builder">The builder to append to</param>
+    /// <param name="tableType">The type of the table</param>
+    private static void AddTableString(StringBuilder builder, Type tableType)
+    {
+        List<IndexData> indexes = [];
         List<string> primaryKeys = [];
         List<ForeignKeyData> foreignKeys = [];
         var tableName = GetTableName(tableType);
@@ -161,7 +174,7 @@ internal static class DbInitialization
         {
             var isLast = i == properties.Count - 1;
 
-            AddPropertyString(context, tableName, properties[i], builder, out var isPrimaryKey, out var propertyForeignKey);
+            AddPropertyString(tableName, properties[i], builder, out var isPrimaryKey, out var propertyForeignKey, out var indexData);
             if (isPrimaryKey)
                 primaryKeys.Add(properties[i].PropertyName);
             
@@ -170,6 +183,9 @@ internal static class DbInitialization
 
             if (!isLast)
                 builder.Append(", ");
+            
+            if(indexData != null)
+                indexes.Add(indexData);
         }
 
         if(primaryKeys.Count > 0)
@@ -193,8 +209,42 @@ internal static class DbInitialization
         }
 
         builder.Append(");\n");
+        if (indexes.Count > 0)
+        {
+            foreach (var indexData in indexes)
+            {
+                AddIndexString(builder, indexData.IsUnique, indexData.Name, tableName, [indexData.ColumnName]);
+            }
+        }
+
+        /*foreach (var compositeIndexAttribute in tableType.GetCustomAttributes<CompositeIndexAttribute>())
+        {
+            AddIndexString(builder, compositeIndexAttribute.IsUnique,
+                $"CIX_{string.Join("_", compositeIndexAttribute.Columns)}", tableName,
+                compositeIndexAttribute.Columns);
+        }*/
     }
 
+    private static void AddIndexString(StringBuilder builder, bool isUnique, string name, string tableName, string[] columns)
+    {
+        builder.Append("CREATE ");
+        if (isUnique)
+            builder.Append("UNIQUE ");
+
+        builder.Append("INDEX IF NOT EXISTS ");
+        builder.Append(name);
+        builder.Append(" ON ");
+        builder.Append(tableName);
+        builder.Append('(');
+        builder.Append(string.Join(",", columns));
+        builder.Append(");\n");
+    }
+
+    /// <summary>
+    /// Adds the foreign key constraint to the column
+    /// </summary>
+    /// <param name="builder">The table StringBuilder</param>
+    /// <param name="fkData">Data for the foreignkey</param>
     private static void AddForeignKeyString(StringBuilder builder, ForeignKeyData fkData)
     {
         builder.Append("FOREIGN KEY (");
@@ -217,6 +267,11 @@ internal static class DbInitialization
         }
     }
 
+    /// <summary>
+    /// Adds the action for the foreignkey(CASCADE, UPDATE, SETNULL...)
+    /// </summary>
+    /// <param name="builder">The table StringBuilder</param>
+    /// <param name="action">Action</param>
     private static void AddForeignKeyAction(StringBuilder builder, ForeignKeyAction action)
     {
         builder.Append(action switch
@@ -234,7 +289,114 @@ internal static class DbInitialization
         });
     }
 
-    private static void AddPropertyTableType(DbContext context, string tableName, StringBuilder builder, Type type, int? maxLength, out bool addNotNull, string? customTypeName = null)
+    /// <summary>
+    /// Adding the column/property to the table string
+    /// </summary>
+    /// <param name="tableName">Name of the table used for the exception</param>
+    /// <param name="property">Property metadata</param>
+    /// <param name="builder">The table string builder</param>
+    /// <param name="isPrimaryKey">Out is primary key</param>
+    /// <param name="foreignKey">ForeignKey data</param>
+    /// <param name="indexData">Index Data</param>
+    /// <exception cref="UskokDbException"></exception>
+    /// <exception cref="UskokDbUnsupportedDbTypeException"></exception>
+    private static void AddPropertyString(string tableName, TypeMetadataProperty property, StringBuilder builder, out bool isPrimaryKey, out ForeignKeyData? foreignKey, out IndexData? indexData)
+    {
+        indexData = null;
+        foreignKey = null;
+        isPrimaryKey = false;
+        var propertyInfo = property.PropertyInfo;
+        MaxLengthAttribute? maxLengthAttr = null;
+        bool isAutoIncrement = false;
+        bool isUnique = false;
+        bool isNotNull = false;
+        string? typeOverride = null;
+        foreach(var attr in propertyInfo.GetCustomAttributes())
+        {
+            if (attr is MaxLengthAttribute max) maxLengthAttr = max;
+            else if (attr is AutoIncrementAttribute) isAutoIncrement = true;
+            else if (attr is KeyAttribute) isPrimaryKey = true;
+            else if (attr is ColumnNotNullAttribute) isNotNull = true;
+            else if (attr is UniqueAttribute) isUnique = true;
+            else if(attr is OverrideDbTypeAttribute overrideDbType) typeOverride = overrideDbType.DbType;
+            else if (attr is DbEnumAttribute dbEnum)
+            {
+                if (!UskokDb.SqlDialectSet || UskokDb.SqlDialect != SqlDialect.MySql) throw new UskokDbException("Enum is only supported in mysql");
+                typeOverride = $"ENUM ({string.Join(",", dbEnum.Values.Select(x => $"'{x}'"))})";
+            }
+            /*else if (attr is IndexAttribute indexAttr)
+            {
+                indexData = new IndexData()
+                {
+                    ColumnName = property.PropertyName,
+                    IsUnique = indexAttr.IsUnique,
+                    Name = $"IX_{property.PropertyName}_{tableName}"
+                };
+            }*/
+            else
+            {
+                var type = attr.GetType();   
+                if (!type.IsGenericType || type.GetGenericTypeDefinition() != ForeignKeyAttrType) continue;
+
+                var foreignTableType = type.GenericTypeArguments[0];
+                var foreignTableName = GetTableName(foreignTableType);
+                if (type.GetProperty("ColumnName")?.GetValue(attr) is not string foreignColumnName) continue;
+                var onDelete = (ForeignKeyAction)type.GetProperty("OnDelete")!.GetValue(attr)!;
+                var onUpdate = (ForeignKeyAction)type.GetProperty("OnUpdate")!.GetValue(attr)!;
+                
+                
+                foreignKey = new ForeignKeyData()
+                {
+                    ColumnName = property.PropertyName,
+                    TableName = foreignTableName,
+                    ForeignColumnName = foreignColumnName,
+                    OnDelete = onDelete,
+                    OnUpdate = onUpdate,
+                };
+            }
+        }
+
+        builder.Append(property.PropertyName);
+        builder.Append(' ');
+
+        AddPropertyTableType(tableName, builder, property.Type, maxLengthAttr?.Length, out var addNotNull, typeOverride);
+        if(isAutoIncrement)
+        {
+            switch (UskokDb.SqlDialect)
+            {
+                case SqlDialect.MySql:
+                    builder.Append(" AUTO_INCREMENT");
+                    break;
+                case SqlDialect.PostgreSql:
+                    builder.Append(" SERIAL");
+                    break;
+                case SqlDialect.SqLite when !isPrimaryKey:
+                    throw new UskokDbException($"Auto increment cannot be used without being the primary key in SQLite, '{tableName}' column '{property.PropertyName}'");
+                case SqlDialect.SqLite:
+                    builder.Append(" AUTOINCREMENT");
+                    break;
+                default:
+                    throw new UskokDbUnsupportedDbTypeException();
+            }
+        }
+        else if(isUnique){
+            builder.Append(" UNIQUE");
+        }
+        if(addNotNull || isNotNull)
+            builder.Append(" NOT NULL");
+    }
+    
+    /// <summary>
+    /// Adding the type for the column/property (VARCHAR, TEXT, INT)
+    /// </summary>
+    /// <param name="tableName">The name of the table(used for the exception)</param>
+    /// <param name="builder">The builder of the table</param>
+    /// <param name="type">Type of the property/column</param>
+    /// <param name="maxLength">Max length used for VARCHAR</param>
+    /// <param name="addNotNull">Should NOT NULL be added</param>
+    /// <param name="customTypeName">Override the column type</param>
+    /// <exception cref="InvalidOperationException">When unable to get the property type</exception>
+    private static void AddPropertyTableType(string tableName, StringBuilder builder, Type type, int? maxLength, out bool addNotNull, string? customTypeName = null)
     {
         addNotNull = true;
         var underlyingType = Nullable.GetUnderlyingType(type);
@@ -267,7 +429,7 @@ internal static class DbInitialization
 
         if (type.IsEnum)
         {
-            AddPropertyTableType(context, tableName, builder, type.GetEnumUnderlyingType(), maxLength, out addNotNull);
+            AddPropertyTableType(tableName, builder, type.GetEnumUnderlyingType(), maxLength, out addNotNull);
             return;
         }
 
@@ -281,7 +443,7 @@ internal static class DbInitialization
         {
             maxLength = converter.GetCustomMaxLength();
             customTypeName = converter.GetCustomTypeInTable();
-            AddPropertyTableType(context, tableName, builder, converter.GetTableType(), maxLength, out addNotNull, customTypeName);
+            AddPropertyTableType(tableName, builder, converter.GetTableType(), maxLength, out addNotNull, customTypeName);
             return;
         }
 
@@ -292,77 +454,6 @@ internal static class DbInitialization
         }
 
         throw new InvalidOperationException($"Could not get type in table ({tableName}) of type {type}");
-    }
-
-    private static void AddPropertyString(DbContext context, string tableName, TypeMetadataProperty property, StringBuilder builder, out bool isPrimaryKey, out ForeignKeyData? foreignKey)
-    {
-        foreignKey = null;
-        isPrimaryKey = false;
-        var propertyInfo = property.PropertyInfo;
-        MaxLengthAttribute? maxLengthAttr = null;
-        bool isAutoIncrement = false;
-        bool isUnique = false;
-        bool isNotNull = false;
-        string? typeOverride = null;
-        foreach(var attr in propertyInfo.GetCustomAttributes())
-        {
-            if (attr is MaxLengthAttribute max) maxLengthAttr = max;
-            else if (attr is AutoIncrementAttribute) isAutoIncrement = true;
-            else if (attr is KeyAttribute) isPrimaryKey = true;
-            else if (attr is ColumnNotNullAttribute) isNotNull = true;
-            else if (attr is UniqueAttribute) isUnique = true;
-            else if(attr is OverrideDbTypeAttribute overrideDbType) typeOverride = overrideDbType.DbType;
-            else
-            {
-                var type = attr.GetType();   
-                if (!type.IsGenericType || type.GetGenericTypeDefinition() != ForeignKeyAttrType) continue;
-
-                var foreignTableType = type.GenericTypeArguments[0];
-                var foreignTableName = GetTableName(foreignTableType);
-                if (type.GetProperty("ColumnName")?.GetValue(attr) is not string foreignColumnName) continue;
-                var onDelete = (ForeignKeyAction)type.GetProperty("OnDelete")!.GetValue(attr)!;
-                var onUpdate = (ForeignKeyAction)type.GetProperty("OnUpdate")!.GetValue(attr)!;
-                
-                
-                foreignKey = new ForeignKeyData()
-                {
-                    ColumnName = property.PropertyName,
-                    TableName = foreignTableName,
-                    ForeignColumnName = foreignColumnName,
-                    OnDelete = onDelete,
-                    OnUpdate = onUpdate,
-                };
-            }
-        }
-
-        builder.Append(property.PropertyName);
-        builder.Append(' ');
-
-        AddPropertyTableType(context, tableName, builder, property.Type, maxLengthAttr?.Length, out var addNotNull, typeOverride);
-        if(isAutoIncrement)
-        {
-            switch (UskokDb.SqlDialect)
-            {
-                case SqlDialect.MySql:
-                    builder.Append(" AUTO_INCREMENT");
-                    break;
-                case SqlDialect.PostgreSql:
-                    builder.Append(" SERIAL");
-                    break;
-                case SqlDialect.SqLite when !isPrimaryKey:
-                    throw new UskokDbException($"Auto increment cannot be used without being the primary key in SQLite, '{tableName}' column '{property.PropertyName}'");
-                case SqlDialect.SqLite:
-                    builder.Append(" AUTOINCREMENT");
-                    break;
-                default:
-                    throw new UskokDbUnsupportedDbTypeException();
-            }
-        }
-        else if(isUnique){
-            builder.Append(" UNIQUE");
-        }
-        if(addNotNull || isNotNull)
-            builder.Append(" NOT NULL");
     }
 
     internal static string CreateDbString(DbContext context)
@@ -376,7 +467,7 @@ internal static class DbInitialization
             if (dbTableType == null || pType.GetCustomAttribute<NotMappedAttribute>() is not null) continue;
 
             var tableType = dbTableType.GenericTypeArguments[0];
-            AddTableString(context, builder, tableType);
+            AddTableString(builder, tableType);
         }
 
         return builder.ToString();

@@ -9,29 +9,18 @@ using UskokDB;
 using UskokDB.Attributes;
 
 UskokDb.SetSqlDialect(SqlDialect.MySql);
-ShopDbContext context = new ShopDbContext();
-Console.WriteLine(context.GetTableCreationString());
-//Console.WriteLine(JsonSerializer.Serialize(list));
+var dbContext = new ShopDbContext();
+await dbContext.ExecuteTableCreationCommand();
+var allUsers = await dbContext.Users.QueryAllAsync();
+Console.WriteLine(JsonSerializer.Serialize(allUsers));
 
-
-/*BenchmarkRunner.Run<BenchmarkTests>();
-[MemoryDiagnoser]
-public class BenchmarkTests
+var command = await dbContext.Users.QueryWhere("userId IN @UserIds", new
 {
-    public ShopDbContext Context = new();
-    public BenchmarkTests()
-    {
-        DbIOOptions.UseJsonForUnknownClassesAndStructs = true;
-    }
+    UserIds = DbQueryHelpers.In(Guid.Parse("0d9315ad-40a7-4a34-b1fc-72e2d03a12ad"))
+});
+Console.WriteLine(JsonSerializer.Serialize(command));
 
 
-
-    [Benchmark]
-    public Task Fast()
-    {
-        return Context.Table.Where("1=1").QueryAsync();
-    }
-}*/
 public class ShopDbContext : DbContext
 {
     public DbTable<User> Users { get; }

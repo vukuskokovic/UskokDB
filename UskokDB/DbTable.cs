@@ -235,6 +235,17 @@ public class DbTable<T>(DbContext context) where T : class, new()
 
     public QueryBuilder<T> GroupBy(params string[] columns) => new QueryBuilder<T>(this).GroupBy(columns);
 
+    public Task<List<T>> QueryAllAsync(CancellationToken cancellationToken = default) =>
+        DbContext.QueryAsync<T>($"SELECT * FROM {TableName}", null, cancellationToken);
+    public Task<List<T>> QueryWhere(Expression<Func<T, bool>> expression, CancellationToken cancellationToken = default) =>
+        new QueryBuilder<T>(this).Where(expression).QueryAsync(cancellationToken);
+    public Task<List<T>> QueryWhere(string query, object? paramsObject = null, CancellationToken cancellationToken = default) =>
+        new QueryBuilder<T>(this).Where(query, paramsObject).QueryAsync(cancellationToken);
+    public Task<T?> QuerySingleAsync(Expression<Func<T, bool>> expression, CancellationToken cancellationToken = default) =>
+        new QueryBuilder<T>(this).Where(expression).QuerySingleAsync(cancellationToken);
+    public Task<T?> QuerySingleAsync(string query, object? paramsObject = null, CancellationToken cancellationToken = default) =>
+        new QueryBuilder<T>(this).Where(query, paramsObject).QuerySingleAsync(cancellationToken);
+
     public Task<int> UpdateAsync(Expression<Func<T>> update, Expression<Func<T, bool>>? where = null, CancellationToken cancellationToken = default) =>
         DbContext.ExecuteAsync(BuildUpdateCommand(update, where), cancellationToken: cancellationToken);
     

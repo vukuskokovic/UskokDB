@@ -103,14 +103,15 @@ public static class DbIO
 
     public static DbPopulateParamsResult PopulateParams(string query, object? paramObj)
     {
+        var paramList = GetParamsList(ref query, paramObj);
         var result = new DbPopulateParamsResult()
         {
             CompiledText = query,
-            Params = GetParamsList(paramObj)
+            Params = paramList
         };
         return result;
     }
-    private static List<DbParam> GetParamsList(object? obj)
+    private static List<DbParam> GetParamsList(ref string query, object? obj)
     {
         List<DbParam> paramList = [];
         if (obj == null) return paramList;
@@ -129,15 +130,43 @@ public static class DbIO
             {
                 propertyName = $"@{propertyName}";
             }
+
+            AddParamsForProperty(ref query, paramList, propertyName, value);
             
-            paramList.Add(new DbParam()
-            {
-                Name = propertyName,
-                Value = value
-            });
         }
 
         return paramList;
+    }
+
+    private static void AddParamsForProperty(ref string query, List<DbParam> paramList, string propertyName, object? value)
+    {
+        if (value is DbQueryHelperInResult queryHelperInResult)
+        {
+            StringBuilder builder = new();
+            builder.Append('(');
+            int i = 0;
+            foreach (var inItemValue in queryHelperInResult.Values)
+            {
+                var itemName = $"{propertyName}_in_{i++}";
+                builder.Append(itemName);
+                builder.Append(',');
+                paramList.Add(new DbParam()
+                {
+                    Name = itemName,
+                    Value = WriteValue(inItemValue)
+                });
+            }
+            builder.Length -= 1;
+            builder.Append(')');
+            query = query.Replace(propertyName, builder.ToString());
+
+            return;
+        }
+        paramList.Add(new DbParam()
+        {
+            Name = propertyName,
+            Value = value
+        });
     }
     
     internal static T Read<T>(DbDataReader reader) where T : class, new()
