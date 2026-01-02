@@ -58,8 +58,9 @@ public sealed class DbEnumAttribute(params string[] values) : Attribute
 public sealed class IndexAttribute(bool isUnique = false) : Attribute
 {
     public bool IsUnique { get; set; } = isUnique;
-}
+}*/
 
+/*
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
 public sealed class CompositeIndexAttribute(params string[] columns) : Attribute
 {

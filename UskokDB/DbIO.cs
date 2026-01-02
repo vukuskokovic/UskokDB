@@ -141,8 +141,7 @@ public static class DbIO
 
     private static void AddParamsForProperty(ref string query, List<DbParam> paramList, string propertyName, object? value)
     {
-        Console.WriteLine(value is IEnumerable);
-        if (value is IEnumerable enumerable)
+        if (value is IEnumerable enumerable and not string)
         {
             StringBuilder builder = new();
             builder.Append('(');
@@ -194,49 +193,55 @@ public static class DbIO
         return valueToBePopulated;
     }
 
-    private static void ReadValue<T>(object? value, TypeMetadataProperty property, T objectHolder) where T : class
+    private static object? ReadValue(object? value, TypeMetadataProperty property)
     {
         if (value is null or DBNull)
         {
-            property.SetterMethod(objectHolder, null);
-            return;
+            return null;
         }
 
         if (property.IsGuidOrNullableGuid)
         {
-            property.SetterMethod(objectHolder, Guid.Parse((string)value));
-            return;
+            return Guid.Parse((string)value);
         }
 
         if (property.IsCharOrNullableChar)
         {
-            property.SetterMethod(objectHolder, char.Parse((string)value));
-            return;
+            return char.Parse((string)value);
         }
 
         var type = property.Type;
         if (PrimitiveTypes.Contains(type))
         {
-            property.SetterMethod(objectHolder, value);
-            return;
+            return value;
         }
 
         if (DbIOOptions.ParameterConverters.TryGetValue(type, out var parameterConverter))
         {
-            property.SetterMethod(objectHolder, parameterConverter.Read(value));
-            return;
+            return parameterConverter.Read(value);
         }
 
         if (type.IsEnum || !ShouldJsonBeUsedForType(type))
         {
-            property.SetterMethod(objectHolder, value);
-            return;
+            return value;
         }
 
         if (DbIOOptions.JsonReader == null) throw new UskokDbIoException("Configured to use json for unknown types and structs but json reader was null");
         if (value is not string jsonStr)
             throw new UskokDbIoException($"Error reading type {type.FullName} did not get json string from the database");
 
-        property.SetterMethod(objectHolder, DbIOOptions.JsonReader(jsonStr, type));
+        return DbIOOptions.JsonReader(jsonStr, type);
+    }
+    
+    private static void ReadValue(object? value, TypeMetadataProperty property, object objectHolder)
+    {
+        var readValue = ReadValue(value, property);
+        property.SetterMethod(objectHolder, readValue);
+    }
+
+    private static void ReadValue<T>(object? value, TypeMetadataProperty property, T objectHolder) where T : class
+    {
+        var readValue = ReadValue(value, property);
+        property.SetterMethod(objectHolder, readValue);
     }
 }

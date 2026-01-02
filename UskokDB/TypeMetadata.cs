@@ -10,8 +10,12 @@ using UskokDB.Attributes;
 namespace UskokDB;
 
 [SuppressMessage("ReSharper", "StaticMemberInGenericType")]
-public static class TypeMetadata<T> where T : class, new()
+public static class TypeMetadata<T> where T : class
 {
+    public static List<TypeMetadataProperty> Properties { get; } = [];
+    public static List<TypeMetadataProperty> Keys { get; } = [];
+    public static Dictionary<string, TypeMetadataProperty> NameToPropertyMap { get; } = [];
+    
     static TypeMetadata()
     {
         var classType = typeof(T);
@@ -32,6 +36,11 @@ public static class TypeMetadata<T> where T : class, new()
                 Keys.Add(meta);
             }
         }
+
+        //Little try at performance in case the metadata is already fetched to avoid reflection cost
+        TypeMetadata.MetaDataDict.TryAdd(typeof(T), typeof(TypeMetadata<T>));
+        TypeMetadata.MetadataProperties.TryAdd(typeof(T), Properties);
+        TypeMetadata.MetadataProperties.TryAdd(typeof(T), Keys);
     }
     
     private static Func<T, object?> CreateGetter(PropertyInfo property)
@@ -62,13 +71,33 @@ public static class TypeMetadata<T> where T : class, new()
             instanceParam,
             valueParam
         );
-
+        
         return lambda.Compile();
     }
+}
+
+public static class TypeMetadata
+{
+    internal static ConcurrentDictionary<Type, Type> MetaDataDict { get; } = new();
+    internal static ConcurrentDictionary<Type, List<TypeMetadataProperty>> MetadataProperties { get; } = new();
+    internal static ConcurrentDictionary<Type, List<TypeMetadataProperty>> KeyProperties { get; } = new();
     
-    public static List<TypeMetadataProperty> Properties { get; } = [];
-    public static List<TypeMetadataProperty> Keys { get; } = [];
-    public static Dictionary<string, TypeMetadataProperty> NameToPropertyMap { get; } = [];
+    public static Type GetMetadataType(Type tableType)
+    {
+        return MetaDataDict.GetOrAdd(tableType, tType => typeof(TypeMetadata<>).MakeGenericType(tType));
+    }
+
+    public static List<TypeMetadataProperty> GetMetadataProperties(Type tableType)
+    {
+        return MetadataProperties.GetOrAdd(tableType,
+            (tType) => (List<TypeMetadataProperty>)GetMetadataType(tType).GetProperty("Properties")!.GetValue(null));
+    }
+    
+    public static List<TypeMetadataProperty> GetKeyProperties(Type tableType)
+    {
+        return KeyProperties.GetOrAdd(tableType,
+            (tType) => (List<TypeMetadataProperty>)GetMetadataType(tType).GetProperty("Keys")!.GetValue(null));
+    }
 }
 
 public class TypeMetadataProperty

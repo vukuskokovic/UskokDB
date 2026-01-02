@@ -37,7 +37,7 @@ public abstract class DbContext : IDisposable
         cmd.CommandText = commandString;
         return cmd;
     }
-    private Task OpenConnectionIfNotOpen(CancellationToken cancellationToken = default)
+    internal Task OpenConnectionIfNotOpen(CancellationToken cancellationToken = default)
     {
         if (DbConnection.State != ConnectionState.Open)
             return DbConnection.OpenAsync(cancellationToken);

@@ -7,9 +7,10 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using UskokDB.Attributes;
+using UskokDB.Query;
 
 namespace UskokDB;
-public class DbTable<T>(DbContext context) where T : class, new()
+public class DbTable<T>(DbContext context) : Queryable<T> where T : class, new()
 {
     private static string InsertInitString { get; } = $"INSERT INTO {TableName} VALUES ";
     public DbContext DbContext { get; } = context;
@@ -297,4 +298,10 @@ public class DbTable<T>(DbContext context) where T : class, new()
     public void AppendDeleteByKey(T item) => DbContext.AppendQueueCmd(BuildDeleteByKey(item));
     public void AppendDeleteByKey(IEnumerable<T> items) => DbContext.AppendQueueCmd(BuildDeleteByKey(items));
     public void AppendDeleteByKey(params T[] items) => DbContext.AppendQueueCmd(BuildDeleteByKey(items));
+
+    public QueryContext<T> Query() => new(this, DbContext);
+
+    public override string GetName() => TableName;
+    public override Type GetUnderlyingType() => typeof(T);
+    public override string? PreQuery(List<DbParam> _) => null;
 }

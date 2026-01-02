@@ -94,7 +94,7 @@ public static class LinqToSql
         return paramName;
     }
 
-    static object? GetMemberValue(MemberExpression memberExp)
+    internal static object? GetMemberValue(MemberExpression memberExp)
     {
         if (memberExp.Member is PropertyInfo propInfo)
         {

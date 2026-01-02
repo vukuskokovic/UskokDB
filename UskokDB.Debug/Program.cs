@@ -1,5 +1,6 @@
 ﻿using System.Data.Common;
 using System.Diagnostics;
+using System.Linq.Expressions;
 using MySqlConnector;
 using System.Text.Json;
 using BenchmarkDotNet.Attributes;
@@ -7,25 +8,36 @@ using BenchmarkDotNet.Running;
 using pikac;
 using UskokDB;
 using UskokDB.Attributes;
+using UskokDB.Query;
 
 UskokDb.SetSqlDialect(SqlDialect.MySql);
 var dbContext = new ShopDbContext();
-await dbContext.ExecuteTableCreationCommand();
-var allUsers = await dbContext.Users.QueryAllAsync();
-Console.WriteLine(JsonSerializer.Serialize(allUsers));
+//await dbContext.ExecuteTableCreationCommand();
 
-var command = await dbContext.Users.QueryWhere("userId IN @UserIds", new
+var playerSkinRead = await dbContext.Players.Query()
+    .Join(dbContext.Skins, (p, s) => p.SkinId == s.SkinId)
+    .Select<PlayerVehicleRead, Player, Skin>((p, s) => new PlayerVehicleRead()
+    {
+        PlayerId = p.PlayerId,
+        SkinId = s.SkinId
+    });
+
+public class PlayerVehicleRead
 {
-    UserIds = (new [] {Guid.Parse("0d9315ad-40a7-4a34-b1fc-72e2d03a12ad")}).ToList()
-});
-Console.WriteLine(JsonSerializer.Serialize(command));
-
+    public Guid PlayerId { get; set; }
+    public Guid SkinId { get; set; }
+}
 
 public class ShopDbContext : DbContext
 {
-    public DbTable<User> Users { get; }
+    public DbTable<Skin> Skins { get; }
+    public DbTable<Player> Players { get; }
+    public DbTable<Vehicle> Vehicles { get; }
+    
     public ShopDbContext() : base(() => new MySqlConnection("Server=localhost;User ID=root;Database=test"))
     {
-        Users = new DbTable<User>(this);
+        Skins = new DbTable<Skin>(this);
+        Players = new DbTable<Player>(this);
+        Vehicles = new DbTable<Vehicle>(this);
     }
 }

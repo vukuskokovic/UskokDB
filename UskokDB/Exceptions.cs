@@ -29,3 +29,5 @@ public sealed class UskokDbTableNotPrimaryKey(string tableName) : UskokDbExcepti
 }
 
 public sealed class UskokDbSqlDialectNotSet() : UskokDbException("Sql dialect is not set");
+
+public sealed class UskokDbSqlFunctionUsedOutsideOfLinq(): UskokDbException("Sql function used outside of Linq");
