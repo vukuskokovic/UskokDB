@@ -26,6 +26,7 @@ public class ImmutableTempItems<T>(IEnumerable<T> items) : TempItems<T>(items), 
 
     public void Dispose()
     {
+        CompiledText = null;
         ParamList.Clear();
         ParamList = null!;
     }

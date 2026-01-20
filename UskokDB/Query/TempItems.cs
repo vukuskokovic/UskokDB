@@ -36,6 +36,8 @@ public class TempItems<T> : Queryable<T> where T : class
         }
     }
 
+    public QueryContext<T> Query(DbContext context) => new (this, context);
+
     public override string GetName() => Name;
 
     public override Type GetUnderlyingType() => typeof(T);

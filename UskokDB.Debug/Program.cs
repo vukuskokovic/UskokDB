@@ -22,6 +22,8 @@ var playerSkinRead = await dbContext.Players.Query()
         SkinId = s.SkinId
     });
 
+Console.WriteLine(playerSkinRead.Count);
+
 public class PlayerVehicleRead
 {
     public Guid PlayerId { get; set; }

@@ -10,13 +10,13 @@ using System.Threading.Tasks;
 
 namespace UskokDB.Query;
 
-public class QueryContext<T> where T : class, new()
+public class QueryContext<T> where T : class
 {
     private DbContext DbContext { get; set; }
     private IQueryable Creator { get; set; }
     private List<JoinData> Joins { get; } = [];
     private HashSet<IQueryable> Queryables { get; } = [];
-    private Tuple<Expression, Type, bool>? SelectData { get; set; }
+    private Tuple<Expression, Type>? SelectData { get; set; }
     internal QueryContext(IQueryable creator, DbContext context)
     {
         Creator = creator;
@@ -76,62 +76,31 @@ public class QueryContext<T> where T : class, new()
     }
 
 
-    private Task<object?> FinishSelect(Expression expression, Type readType, bool isList)
+    private Task<List<TRead>> FinishSelect<TRead>(Expression expression, bool printToConsole = false) where TRead : class, new ()
     {
-        SelectData = new Tuple<Expression, Type, bool>(expression, readType, isList);
-        return CompileAndRead();
+        SelectData = new Tuple<Expression, Type>(expression, typeof(TRead));
+        return DbContext.QueryAsync<TRead>(this.Compile(printToConsole).CreateCommandWithConnection(this.DbContext.DbConnection));
+    }
+    
+    private Task<TRead?> FinishSelectOne<TRead>(Expression expression, bool printToConsole = false) where TRead : class, new ()
+    {
+        SelectData = new Tuple<Expression, Type>(expression, typeof(TRead));
+        return DbContext.QuerySingleAsync<TRead>(this.Compile(printToConsole).CreateCommandWithConnection(this.DbContext.DbConnection));
     }
 
-    public async Task<TRead?> SelectOneAsync<TRead, T0>(Expression<Func<T0, TRead>> selector) where TRead : class, new()
-        => (TRead?)(await FinishSelect(selector.Body, typeof(TRead), false));
+    public Task<TRead?> SelectOneAsync<TRead, T0>(Expression<Func<T0, TRead>> selector, bool printToConsole = false) where TRead : class, new()
+        => FinishSelectOne<TRead>(selector.Body, printToConsole);
     
-    public async Task<TRead?> SelectOneAsync<TRead, T0, T1>(Expression<Func<T0, T1, TRead>> selector) where TRead : class, new()
-        => (TRead?)(await FinishSelect(selector.Body, typeof(TRead), false));
+    public Task<TRead?> SelectOneAsync<TRead, T0, T1>(Expression<Func<T0, T1, TRead>> selector, bool printToConsole = false) where TRead : class, new()
+        => FinishSelectOne<TRead>(selector.Body, printToConsole);
     
-    public async Task<List<TRead>> Select<TRead, T0>(Expression<Func<T0, TRead>> selector) where TRead : class, new()
-        => (List<TRead>)(await FinishSelect(selector.Body, typeof(TRead), true))!;
+    public Task<List<TRead>> Select<TRead, T0>(Expression<Func<T0, TRead>> selector, bool printToConsole = false) where TRead : class, new()
+        => FinishSelect<TRead>(selector.Body, printToConsole);
     
-    public async Task<List<TRead>> Select<TRead, T0, T1>(Expression<Func<T0, T1, TRead>> selector) where TRead : class, new()
-        => (List<TRead>)(await FinishSelect(selector.Body, typeof(TRead), true))!;
-
-
-    private object ReadRow(DbDataReader reader, List<TypeMetadataProperty> properties)
-    {
-        return null;
-    }
-    private async Task<object?> CompileAndRead()
-    {
-        if (SelectData == null) throw new UskokDbException("SelectData is null but CompileAndRead is called?");
-        await DbContext.OpenConnectionIfNotOpen();
-        #if !NETSTANDARD2_0
-        await
-        #endif
-        using var connection = Compile().CreateCommandWithConnection(DbContext.DbConnection);
-        
-        #if !NETSTANDARD2_0
-        await
-        #endif
-        using var reader = await connection.ExecuteReaderAsync();
-        if (!SelectData.Item3 && !reader.HasRows)
-            return null;
-        
-        List<TypeMetadataProperty> metadataProperties = TypeMetadata.GetMetadataProperties(SelectData.Item2);
-        
-        List<object> rowList = [];
-        
-        
-        //If is not multiple(!List<TRead>)
-        if (!SelectData.Item3)
-        {
-            return ReadRow(reader, metadataProperties);
-        }
-        
-        Console.WriteLine("Should read list");
-        object? list;
-        
-        return null;
-    }
-    public DbPopulateParamsResult Compile()
+    public Task<List<TRead>> Select<TRead, T0, T1>(Expression<Func<T0, T1, TRead>> selector, bool printToConsole = false) where TRead : class, new()
+        => FinishSelect<TRead>(selector.Body, printToConsole);
+    
+    public DbPopulateParamsResult Compile(bool printToConsole = false)
     {
         var finalQuery  = new StringBuilder();
         List<DbParam> dbParams = [];
@@ -179,7 +148,10 @@ public class QueryContext<T> where T : class, new()
 
 
         var compiledQueryText = finalQuery.ToString();
-        Console.WriteLine(compiledQueryText);
+        if (printToConsole)
+        {
+            Console.WriteLine(compiledQueryText);
+        }
         return new DbPopulateParamsResult()
         {
             CompiledText = compiledQueryText,
@@ -190,7 +162,7 @@ public class QueryContext<T> where T : class, new()
     private string CompileSelect(List<DbParam> paramList)
     {
         if (SelectData == null) throw new UskokDbException("Select data is null");
-        var (expression, readType, _) = SelectData;
+        var (expression, readType) = SelectData;
         if (expression is not MemberInitExpression memberInitExpression)
             throw new Exception($"Select is not MemberInitExpression, Type: {expression.GetType().FullName}");
         

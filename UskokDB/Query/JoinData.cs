@@ -7,7 +7,7 @@ namespace UskokDB;
 
 internal class JoinData
 {
-    internal IQueryable JoinOn { get; set; }
+    internal IQueryable JoinOn { get; set; } = null!;
     internal JoinType JoinType { get; set; }
     internal List<IQueryable> Queryables { get; set; } = [];
     internal Expression Expression { get; set; } = null!;
