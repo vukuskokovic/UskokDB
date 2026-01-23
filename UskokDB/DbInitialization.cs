@@ -10,6 +10,8 @@ namespace UskokDB;
 
 internal static class DbInitialization
 {
+    internal static List<DbIndexData> DbIndexList { get; } = [];
+    
     static DbInitialization()
     {
         if (!UskokDb.SqlDialectSet)
@@ -70,9 +72,9 @@ internal static class DbInitialization
         },
         [typeof(decimal)] = new Dictionary<SqlDialect, string>
         {
-            { SqlDialect.MySql, "DECIMAL" },
-            { SqlDialect.PostgreSql, "NUMERIC" },
-            { SqlDialect.SqLite, "NUMERIC" }
+            { SqlDialect.MySql, "DECIMAL(10, 2)" },
+            { SqlDialect.PostgreSql, "NUMERIC(10, 2)" },
+            { SqlDialect.SqLite, "NUMERIC(10, 2)" }
         },
         [typeof(byte)] = new Dictionary<SqlDialect, string>
         {
@@ -147,13 +149,6 @@ internal static class DbInitialization
         public ForeignKeyAction OnDelete = ForeignKeyAction.DbDefault;
         public ForeignKeyAction OnUpdate = ForeignKeyAction.DbDefault;
     }
-
-    private class IndexData
-    {
-        public bool IsUnique = false;
-        public string Name = null!;
-        public string ColumnName = null!;
-    }
     /// <summary>
     /// The main function for the table creation
     /// </summary>
@@ -161,7 +156,6 @@ internal static class DbInitialization
     /// <param name="tableType">The type of the table</param>
     private static void AddTableString(StringBuilder builder, Type tableType)
     {
-        List<IndexData> indexes = [];
         List<string> primaryKeys = [];
         List<ForeignKeyData> foreignKeys = [];
         var tableName = GetTableName(tableType);
@@ -174,7 +168,7 @@ internal static class DbInitialization
         {
             var isLast = i == properties.Count - 1;
 
-            AddPropertyString(tableName, properties[i], builder, out var isPrimaryKey, out var propertyForeignKey, out var indexData);
+            AddPropertyString(tableName, properties[i], builder, out var isPrimaryKey, out var propertyForeignKey);
             if (isPrimaryKey)
                 primaryKeys.Add(properties[i].PropertyName);
             
@@ -183,9 +177,6 @@ internal static class DbInitialization
 
             if (!isLast)
                 builder.Append(", ");
-            
-            if(indexData != null)
-                indexes.Add(indexData);
         }
 
         if(primaryKeys.Count > 0)
@@ -209,35 +200,33 @@ internal static class DbInitialization
         }
 
         builder.Append(");\n");
-        if (indexes.Count > 0)
-        {
-            foreach (var indexData in indexes)
-            {
-                AddIndexString(builder, indexData.IsUnique, indexData.Name, tableName, [indexData.ColumnName]);
-            }
-        }
 
+        foreach (var dbIndex in tableType.GetCustomAttributes<DbIndexAttribute>())
+        {
+            foreach (var column in dbIndex.Columns)
+            {
+                var columnExists = properties.Any(x => x.PropertyName == column);
+
+                if (!columnExists)
+                {
+                    throw new UskokDbException($"Index error, column not found in table {tableName}, column {column}");
+                }
+            }
+            DbIndexList.Add(new DbIndexData()
+            {
+                Unique = dbIndex.Unique,
+                Columns = dbIndex.Columns,
+                Name = $"idx_{tableName}_{string.Join("_", dbIndex.Columns)}",
+                TableName = tableName
+            });
+        }
+        
         /*foreach (var compositeIndexAttribute in tableType.GetCustomAttributes<CompositeIndexAttribute>())
         {
             AddIndexString(builder, compositeIndexAttribute.IsUnique,
                 $"CIX_{string.Join("_", compositeIndexAttribute.Columns)}", tableName,
                 compositeIndexAttribute.Columns);
         }*/
-    }
-
-    private static void AddIndexString(StringBuilder builder, bool isUnique, string name, string tableName, string[] columns)
-    {
-        builder.Append("CREATE ");
-        if (isUnique)
-            builder.Append("UNIQUE ");
-
-        builder.Append("INDEX IF NOT EXISTS ");
-        builder.Append(name);
-        builder.Append(" ON ");
-        builder.Append(tableName);
-        builder.Append('(');
-        builder.Append(string.Join(",", columns));
-        builder.Append(");\n");
     }
 
     /// <summary>
@@ -300,9 +289,8 @@ internal static class DbInitialization
     /// <param name="indexData">Index Data</param>
     /// <exception cref="UskokDbException"></exception>
     /// <exception cref="UskokDbUnsupportedDbTypeException"></exception>
-    private static void AddPropertyString(string tableName, TypeMetadataProperty property, StringBuilder builder, out bool isPrimaryKey, out ForeignKeyData? foreignKey, out IndexData? indexData)
+    private static void AddPropertyString(string tableName, TypeMetadataProperty property, StringBuilder builder, out bool isPrimaryKey, out ForeignKeyData? foreignKey)
     {
-        indexData = null;
         foreignKey = null;
         isPrimaryKey = false;
         var propertyInfo = property.PropertyInfo;
@@ -324,15 +312,6 @@ internal static class DbInitialization
                 if (!UskokDb.SqlDialectSet || UskokDb.SqlDialect != SqlDialect.MySql) throw new UskokDbException("Enum is only supported in mysql");
                 typeOverride = $"ENUM ({string.Join(",", dbEnum.Values.Select(x => $"'{x}'"))})";
             }
-            /*else if (attr is IndexAttribute indexAttr)
-            {
-                indexData = new IndexData()
-                {
-                    ColumnName = property.PropertyName,
-                    IsUnique = indexAttr.IsUnique,
-                    Name = $"IX_{property.PropertyName}_{tableName}"
-                };
-            }*/
             else
             {
                 var type = attr.GetType();   
@@ -472,4 +451,12 @@ internal static class DbInitialization
 
         return builder.ToString();
     }
+}
+
+internal class DbIndexData
+{
+    public string Name { get; set; } = null!;
+    public bool Unique { get; set; }
+    public string TableName { get; set; } = null!;
+    public string[] Columns { get; set; } = null!;
 }

@@ -16,6 +16,8 @@ public static class TypeMetadata<T> where T : class
     public static List<TypeMetadataProperty> Keys { get; } = [];
     public static Dictionary<string, TypeMetadataProperty> NameToPropertyMap { get; } = [];
     
+    
+    
     static TypeMetadata()
     {
         var classType = typeof(T);

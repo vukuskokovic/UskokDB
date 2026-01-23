@@ -54,6 +54,26 @@ public sealed class DbEnumAttribute(params string[] values) : Attribute
     public string[] Values { get; set; } = values;
 }
 
+[AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
+public sealed class DbIndexAttribute : Attribute
+{
+    public bool Unique { get; }
+    public string[] Columns { get; }
+
+    public DbIndexAttribute(params string[] columns)
+    {
+        if (columns.Length == 0) throw new Exception("Index column list is empty");
+        Columns = columns;
+    }
+
+    public DbIndexAttribute(bool unique, params string[] columns)
+    {
+        if (columns.Length == 0) throw new Exception("Index column list is empty");
+        Unique = unique;
+        Columns = columns;
+    }
+}
+
 /*[AttributeUsage(AttributeTargets.Property)]
 public sealed class IndexAttribute(bool isUnique = false) : Attribute
 {

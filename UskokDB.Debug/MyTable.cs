@@ -5,6 +5,7 @@ using UskokDB.Generator;
 
 namespace pikac;
 
+[DbIndex(true, "name", "playerId")]
 public class Player
 {
     [Key]
@@ -15,6 +16,8 @@ public class Player
     public Guid SkinId { get; set; }
 }
 
+[DbIndex("vehicleCode")]
+[DbIndex("playerId")]
 public class Vehicle
 {
     [Key]
@@ -24,6 +27,7 @@ public class Vehicle
     public Guid PlayerId { get; set; }
 }
 
+[DbIndex("skinName")]
 public class Skin
 {
     [Key]

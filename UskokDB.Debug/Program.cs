@@ -12,17 +12,7 @@ using UskokDB.Query;
 
 UskokDb.SetSqlDialect(SqlDialect.MySql);
 var dbContext = new ShopDbContext();
-//await dbContext.ExecuteTableCreationCommand();
-
-var playerSkinRead = await dbContext.Players.Query()
-    .Join(dbContext.Skins, (p, s) => p.SkinId == s.SkinId)
-    .Select<PlayerVehicleRead, Player, Skin>((p, s) => new PlayerVehicleRead()
-    {
-        PlayerId = p.PlayerId,
-        SkinId = s.SkinId
-    });
-
-Console.WriteLine(playerSkinRead.Count);
+await dbContext.InitDb();
 
 public class PlayerVehicleRead
 {

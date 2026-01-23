@@ -305,8 +305,56 @@ public abstract class DbContext : IDisposable
     #endregion
 
 
-    public Task<int> ExecuteTableCreationCommand(CancellationToken token = default) =>
-        ExecuteAsync(GetTableCreationString(), cancellationToken: token);
+    public async Task InitDb(CancellationToken token = default)
+    {
+        await ExecuteAsync(GetTableCreationString(), cancellationToken: token);
+
+        if (DbInitialization.DbIndexList.Count > 0)
+        {
+            var indexes = await QueryAsync<IndexQuery>("""
+                                                        SELECT index_name
+                                                       FROM information_schema.statistics
+                                                       WHERE table_schema = DATABASE()
+                                                       GROUP BY table_name, index_name;
+                                                       """, cancellationToken: token);
+
+
+            StringBuilder builder = new StringBuilder();
+            var indexHashSet = new HashSet<string>(indexes.Select(x => x.IndexName));
+            bool anyAdded = false;
+            foreach (var dbIndex in DbInitialization.DbIndexList)
+            {
+                if (!indexHashSet.Contains(dbIndex.Name))
+                {
+                    builder.Append("CREATE ");
+                    if(dbIndex.Unique)
+                        builder.Append("UNIQUE ");
+
+                    builder.Append("INDEX ");
+                    builder.Append(dbIndex.Name);
+                    builder.Append(" ON ");
+                    builder.Append(dbIndex.TableName);
+                    builder.Append('(');
+                    for (int i = 0; i < dbIndex.Columns.Length; i++)
+                    {
+                        builder.Append(dbIndex.Columns[i]);
+                        if (i + 1 != dbIndex.Columns.Length)
+                            builder.Append(',');
+                    }
+
+                    builder.AppendLine(");");
+
+                    anyAdded = true;
+                }
+            }
+
+            if (anyAdded)
+            {
+                await ExecuteAsync(builder.ToString(), cancellationToken: token);
+            }
+        }
+
+    }
 
     #region Dispose
 
@@ -329,4 +377,9 @@ public abstract class DbContext : IDisposable
 
     #endregion
     
+}
+
+internal class IndexQuery
+{
+    public string IndexName { get; set; } = null!;
 }
