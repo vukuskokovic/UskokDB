@@ -5,33 +5,11 @@ using UskokDB.Generator;
 
 namespace pikac;
 
-[DbIndex(true, "name", "playerId")]
-public class Player
+[TableName("tedawdwad")]
+public class ClockTable
 {
-    [Key]
-    public Guid PlayerId { get; set; }
-    
-    public string Name { get; set; }
-    [ForeignKey<Skin>("skinId")]
-    public Guid SkinId { get; set; }
-}
-
-[DbIndex("vehicleCode")]
-[DbIndex("playerId")]
-public class Vehicle
-{
-    [Key]
-    public Guid VehicleId { get; set; }
-    public string VehicleCode { get; set; }
-    [ForeignKey<Player>("playerId")]
-    public Guid PlayerId { get; set; }
-}
-
-[DbIndex("skinName")]
-public class Skin
-{
-    [Key]
-    public Guid SkinId { get; set; }
-    public string SkinName { get; set; }
-    public int Color { get; set; }
+    public Guid Test { get; set; }
+    public TimeSpan Start { get; set; }
+    public TimeSpan End { get; set; }
+    public DateTime? Date { get; set; }
 }

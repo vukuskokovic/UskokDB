@@ -13,6 +13,8 @@ using UskokDB.Query;
 UskokDb.SetSqlDialect(SqlDialect.MySql);
 var dbContext = new ShopDbContext();
 await dbContext.InitDb();
+var stuff = await dbContext.Clock.QueryAllAsync();
+Console.WriteLine(JsonSerializer.Serialize(stuff));
 
 public class PlayerVehicleRead
 {
@@ -22,14 +24,9 @@ public class PlayerVehicleRead
 
 public class ShopDbContext : DbContext
 {
-    public DbTable<Skin> Skins { get; }
-    public DbTable<Player> Players { get; }
-    public DbTable<Vehicle> Vehicles { get; }
-    
+    public DbTable<ClockTable> Clock { get; }
     public ShopDbContext() : base(() => new MySqlConnection("Server=localhost;User ID=root;Database=test"))
     {
-        Skins = new DbTable<Skin>(this);
-        Players = new DbTable<Player>(this);
-        Vehicles = new DbTable<Vehicle>(this);
+        Clock = new DbTable<ClockTable>(this);
     }
 }

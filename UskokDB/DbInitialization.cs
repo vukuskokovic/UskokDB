@@ -100,23 +100,17 @@ internal static class DbInitialization
             { SqlDialect.PostgreSql, "TIMESTAMP" },
             { SqlDialect.SqLite, "TEXT" }
         },
-        [typeof(DateTime?)] = new Dictionary<SqlDialect, string>
-        {
-            { SqlDialect.MySql, "DATETIME" },
-            { SqlDialect.PostgreSql, "TIMESTAMP" },
-            { SqlDialect.SqLite, "TEXT" }
-        },
         [typeof(Guid)] = new Dictionary<SqlDialect, string>
         {
             { SqlDialect.MySql, "VARCHAR(36)" },
             { SqlDialect.PostgreSql, "VARCHAR(36)" },
             { SqlDialect.SqLite, "VARCHAR(36)" }
         },
-        [typeof(Guid?)] = new Dictionary<SqlDialect, string>
+        [typeof(TimeSpan)] = new Dictionary<SqlDialect, string>()
         {
-            { SqlDialect.MySql, "VARCHAR(36)" },
-            { SqlDialect.PostgreSql, "VARCHAR(36)" },
-            { SqlDialect.SqLite, "VARCHAR(36)" }
+            { SqlDialect.MySql, "TIME" },
+            { SqlDialect.PostgreSql, "TIME" },
+            { SqlDialect.SqLite, "TEXT" }
         }
     };
 
