@@ -62,6 +62,8 @@ public class QueryContext<T> where T : class
     public QueryContext<T> Where<T0, T1, T2, T3, T4>(Expression<Func<T0, T1, T2, T3, T4,bool>> selector) => SetWere(selector.Body);
     public QueryContext<T> Where<T0, T1, T2, T3, T4, T5>(Expression<Func<T0, T1, T2, T3, T4, T5, bool>> selector) => SetWere(selector.Body);
     public QueryContext<T> Where<T0, T1, T2, T3, T4, T5, T6>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, bool>> selector) => SetWere(selector.Body);
+    public QueryContext<T> Where<T0, T1, T2, T3, T4, T5, T6, T7>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, bool>> selector) => SetWere(selector.Body);
+    public QueryContext<T> Where<T0, T1, T2, T3, T4, T5, T6, T7, T8>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, bool>> selector) => SetWere(selector.Body);
 
     public QueryContext<T> OrderBy<T0>(Expression<Func<T0, object>> expression)
     {
@@ -75,6 +77,9 @@ public class QueryContext<T> where T : class
         return this;
     }
 
+
+    //Made a region since this is a little cancer
+    #region  Select
 
     private Task<List<TRead>> FinishSelect<TRead>(Expression expression, bool printToConsole = false) where TRead : class, new ()
     {
@@ -93,12 +98,40 @@ public class QueryContext<T> where T : class
     
     public Task<TRead?> SelectOneAsync<TRead, T0, T1>(Expression<Func<T0, T1, TRead>> selector, bool printToConsole = false) where TRead : class, new()
         => FinishSelectOne<TRead>(selector.Body, printToConsole);
-    
+    public Task<TRead?> SelectOneAsync<TRead, T0, T1, T2>(Expression<Func<T0, T1, T2, TRead>> selector, bool printToConsole = false) where TRead : class, new()
+        => FinishSelectOne<TRead>(selector.Body, printToConsole);
+    public Task<TRead?> SelectOneAsync<TRead, T0, T1, T2, T3>(Expression<Func<T0, T1, T2, T3, TRead>> selector, bool printToConsole = false) where TRead : class, new()
+        => FinishSelectOne<TRead>(selector.Body, printToConsole);
+    public Task<TRead?> SelectOneAsync<TRead, T0, T1, T2, T3, T4>(Expression<Func<T0, T1, T2, T3, T4, TRead>> selector, bool printToConsole = false) where TRead : class, new()
+        => FinishSelectOne<TRead>(selector.Body, printToConsole);
+    public Task<TRead?> SelectOneAsync<TRead, T0, T1, T2, T3, T4, T5>(Expression<Func<T0, T1, T2, T3, T4, T5, TRead>> selector, bool printToConsole = false) where TRead : class, new()
+        => FinishSelectOne<TRead>(selector.Body, printToConsole);
+    public Task<TRead?> SelectOneAsync<TRead, T0, T1, T2, T3, T4, T5, T6>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, TRead>> selector, bool printToConsole = false) where TRead : class, new()
+        => FinishSelectOne<TRead>(selector.Body, printToConsole);
+    public Task<TRead?> SelectOneAsync<TRead, T0, T1, T2, T3, T4, T5, T6, T7>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, TRead>> selector, bool printToConsole = false) where TRead : class, new()
+        => FinishSelectOne<TRead>(selector.Body, printToConsole);
+    public Task<TRead?> SelectOneAsync<TRead, T0, T1, T2, T3, T4, T5, T6, T7, T8>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRead>> selector, bool printToConsole = false) where TRead : class, new()
+        => FinishSelectOne<TRead>(selector.Body, printToConsole);
+    //=====================================================================
     public Task<List<TRead>> Select<TRead, T0>(Expression<Func<T0, TRead>> selector, bool printToConsole = false) where TRead : class, new()
         => FinishSelect<TRead>(selector.Body, printToConsole);
     
     public Task<List<TRead>> Select<TRead, T0, T1>(Expression<Func<T0, T1, TRead>> selector, bool printToConsole = false) where TRead : class, new()
         => FinishSelect<TRead>(selector.Body, printToConsole);
+    public Task<List<TRead>> Select<TRead, T0, T1, T2>(Expression<Func<T0, T1, T2, TRead>> selector, bool printToConsole = false) where TRead : class, new()
+        => FinishSelect<TRead>(selector.Body, printToConsole);
+    public Task<List<TRead>> Select<TRead, T0, T1, T2, T3>(Expression<Func<T0, T1, T2, T3, TRead>> selector, bool printToConsole = false) where TRead : class, new()
+        => FinishSelect<TRead>(selector.Body, printToConsole);
+    public Task<List<TRead>> Select<TRead, T0, T1, T2, T3, T4>(Expression<Func<T0, T1, T2, T3, T4, TRead>> selector, bool printToConsole = false) where TRead : class, new()
+        => FinishSelect<TRead>(selector.Body, printToConsole);
+    public Task<List<TRead>> Select<TRead, T0, T1, T2, T3, T4, T5>(Expression<Func<T0, T1, T2, T3, T4, T5, TRead>> selector, bool printToConsole = false) where TRead : class, new()
+        => FinishSelect<TRead>(selector.Body, printToConsole);
+    public Task<List<TRead>> Select<TRead, T0, T1, T2, T3, T4, T5, T6, T7>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, TRead>> selector, bool printToConsole = false) where TRead : class, new()
+        => FinishSelect<TRead>(selector.Body, printToConsole);
+    public Task<List<TRead>> Select<TRead, T0, T1, T2, T3, T4, T5, T6, T7, T8>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRead>> selector, bool printToConsole = false) where TRead : class, new()
+        => FinishSelect<TRead>(selector.Body, printToConsole);
+
+    #endregion
     
     public DbPopulateParamsResult Compile(bool printToConsole = false)
     {
@@ -239,6 +272,8 @@ public class QueryContext<T> where T : class
                 ExpressionType.LessThan => " < ",
                 ExpressionType.LessThanOrEqual => " <= ",
                 ExpressionType.Coalesce => " ?? ",
+                ExpressionType.Add => " + ",
+                ExpressionType.Subtract => " - ",
                 ExpressionType.And or ExpressionType.AndAlso => " AND ",
                 ExpressionType.Or or ExpressionType.OrElse => " OR ",
                 _ => throw new UskokDbException(

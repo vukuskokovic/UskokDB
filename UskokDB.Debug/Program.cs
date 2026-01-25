@@ -12,9 +12,16 @@ using UskokDB.Query;
 
 UskokDb.SetSqlDialect(SqlDialect.MySql);
 var dbContext = new ShopDbContext();
-await dbContext.InitDb();
-var stuff = await dbContext.Clock.QueryAllAsync();
-Console.WriteLine(JsonSerializer.Serialize(stuff));
+var stuff = dbContext.Clock.Query().OrderBy<ClockTable>((c) => c.Date).Select<ClockTable, ClockTable>((c) =>
+    new ClockTable()
+    {
+        Date = c.Date,
+        End = c.End,
+        Kurac = c.Kurac,
+        Start = c.Start,
+        Test = c.Test
+    }, true);
+
 
 public class PlayerVehicleRead
 {

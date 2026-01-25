@@ -56,7 +56,9 @@ public static class DbIO
         typeof(DateTime),
         typeof(DateTime?),
         typeof(Guid),
-        typeof(Guid?)
+        typeof(Guid?),
+        typeof(TimeSpan),
+        typeof(TimeSpan?),
     ];
 
     public static bool ShouldJsonBeUsedForType(Type type)

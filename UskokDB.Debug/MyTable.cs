@@ -6,10 +6,15 @@ using UskokDB.Generator;
 namespace pikac;
 
 [TableName("tedawdwad")]
-public class ClockTable
+public class ClockTable : TimedModelItem
 {
     public Guid Test { get; set; }
     public TimeSpan Start { get; set; }
     public TimeSpan End { get; set; }
-    public DateTime? Date { get; set; }
+    public DateTime Date { get; set; }
+}
+
+public abstract class TimedModelItem
+{
+    public DateTime Kurac { get; set; }
 }
