@@ -10,16 +10,18 @@ using UskokDB;
 using UskokDB.Attributes;
 using UskokDB.Query;
 
-UskokDb.SetSqlDialect(SqlDialect.MySql);
+UskokDb.SetSqlDialect(SqlDialect.PostgreSql);
 var dbContext = new ShopDbContext();
-var stuff = dbContext.Clock.Query().OrderBy<ClockTable>((c) => c.Date).Select<ClockTable, ClockTable>((c) =>
+var t = TimeSpan.Zero;
+var stuff = dbContext.Clock.Query().Select<ClockTable, ClockTable>((clock) =>
     new ClockTable()
     {
-        Date = c.Date,
-        End = c.End,
-        Kurac = c.Kurac,
-        Start = c.Start,
-        Test = c.Test
+        Date = clock.Date,
+        End = clock.End,
+        Kurac = clock.Kurac + clock.End,
+        Start = clock.Start < t? clock.Start : t,
+        Test = clock.Test,
+        Str = clock.Str + "312" + "541"
     }, true);
 
 

@@ -161,7 +161,7 @@ public class QueryContext<T> where T : class
         {
             finalQuery.Append("WHERE ");
             int x = 0;
-            finalQuery.AppendLine(AppendExpression(WhereExpression, "@where_", dbParams, ref x));
+            finalQuery.AppendLine(AppendExpression(WhereExpression, "@where_", dbParams, ref x, out _));
         }
 
         if (OrderByExpressions.Count > 0)
@@ -173,7 +173,7 @@ public class QueryContext<T> where T : class
                 if (i > 0) finalQuery.Append(", ");
 
                 var (expr, desc) = OrderByExpressions[i];
-                finalQuery.Append(AppendExpression(expr, "@o_", dbParams, ref paramIndex));
+                finalQuery.Append(AppendExpression(expr, "@o_", dbParams, ref paramIndex, out _));
                 finalQuery.Append(desc ? " DESC" : string.Empty);
             }
             finalQuery.AppendLine();
@@ -212,7 +212,7 @@ public class QueryContext<T> where T : class
                 
                 if(propertyMetadata.PropertyInfo.Name != memberAssignment.Member.Name)continue;
 
-                builder.Append(AppendExpression(memberAssignment.Expression, "@select_p_", paramList, ref pIndex));
+                builder.Append(AppendExpression(memberAssignment.Expression, "@select_p_", paramList, ref pIndex, out _));
             }
             
             i++;
@@ -235,17 +235,25 @@ public class QueryContext<T> where T : class
 
         int propIndex = 0;
 
-        builder.AppendLine(AppendExpression(binaryExpression, $"@j_p_{joinIndex}_", paramList, ref propIndex));
+        builder.AppendLine(AppendExpression(binaryExpression, $"@j_p_{joinIndex}_", paramList, ref propIndex, out _));
     }
 
+    private readonly Dictionary<object, string> _alreadyExistingParams = [];
     private string AddParam(List<DbParam> paramList, object value, string namePrefix, ref int propertyIndex)
     {
+        if (_alreadyExistingParams.TryGetValue(value, out var existingParamName))
+        {
+            return existingParamName;
+        }
+        
         var name = $"{namePrefix}{propertyIndex++}";
         paramList.Add(new DbParam()
         {
             Name = name,
             Value = value
         });
+
+        _alreadyExistingParams[value] = name;
 
         return name;
     }
@@ -255,11 +263,20 @@ public class QueryContext<T> where T : class
         return Queryables.FirstOrDefault(q => q.GetUnderlyingType() == type);
     }
     
-    private string AppendExpression(Expression expression, string namePrefix, List<DbParam> dbParams, ref int propertyIndex)
+    private string AppendExpression(Expression expression, string namePrefix, List<DbParam> dbParams, ref int propertyIndex, out Type? outputType)
     {
+        outputType = null;
         if (expression is UnaryExpression { NodeType: ExpressionType.Convert or ExpressionType.ConvertChecked } u)
         {
-            return AppendExpression(u.Operand, namePrefix, dbParams, ref propertyIndex);
+            return AppendExpression(u.Operand, namePrefix, dbParams, ref propertyIndex, out outputType);
+        }
+
+        if (expression is ConditionalExpression conditionalExpression)
+        {
+            var testCompiled = AppendExpression(conditionalExpression.Test, namePrefix, dbParams, ref propertyIndex, out _);
+            var ifYesCompiled = AppendExpression(conditionalExpression.IfTrue, namePrefix, dbParams, ref propertyIndex, out _);
+            var ifNoCompiled = AppendExpression(conditionalExpression.IfFalse, namePrefix, dbParams, ref propertyIndex, out _);
+            return $"CASE WHEN {testCompiled} THEN {ifYesCompiled} ELSE {ifNoCompiled} END";
         }
         if (expression is BinaryExpression binaryExpression)
         {
@@ -280,12 +297,34 @@ public class QueryContext<T> where T : class
                     $"Binary expression node type: {binaryExpression.NodeType} not supported")
             };
             
-            var leftExpCompiled = AppendExpression(binaryExpression.Left, namePrefix, dbParams, ref propertyIndex);
-            var rightExpCompiled = AppendExpression(binaryExpression.Right, namePrefix, dbParams, ref propertyIndex);
+            var leftExpCompiled = AppendExpression(binaryExpression.Left, namePrefix, dbParams, ref propertyIndex, out var leftType);
+            var rightExpCompiled = AppendExpression(binaryExpression.Right, namePrefix, dbParams, ref propertyIndex, out var rightType);
+            
+            
             
             if (binaryExpression.NodeType == ExpressionType.Coalesce)
             {
                 return $"COALESCE({leftExpCompiled}, {rightExpCompiled})";
+            }
+
+            if (binaryExpression.NodeType == ExpressionType.Add)
+            {
+                if (rightType != null && leftType != null)
+                {
+                    if (rightType == typeof(string) && leftType == typeof(string))
+                    {
+                        outputType = typeof(string);
+                        if (UskokDb.SqlDialect == SqlDialect.MySql)
+                        {
+                            return $"CONCAT({leftExpCompiled}, {rightExpCompiled})";
+                        }
+                        else
+                        {
+                            return $"({leftExpCompiled} || {rightExpCompiled})";
+                        }
+                    }
+                }
+                
             }
             
             if(binaryExpression.NodeType is ExpressionType.NotEqual or ExpressionType.Equal && (leftExpCompiled == NullVale || rightExpCompiled == NullVale))
@@ -297,17 +336,19 @@ public class QueryContext<T> where T : class
         if(expression is ConstantExpression constantExpression)
         {
             if (constantExpression.Value == null) return NullVale;
-            
+
+            outputType = constantExpression.Value.GetType();
             return AddParam(dbParams, constantExpression.Value, namePrefix, ref propertyIndex);
         }
 
         if (expression is MemberExpression memberExpression)
         {
-            var holdingType = memberExpression.Member.DeclaringType;
+            var holdingType = memberExpression.Expression?.Type ?? memberExpression.Member.DeclaringType;
             if (holdingType == null)
             {
                 throw new UskokDbException("Member expression doesn't have a declaring type");
             }
+            
             var queryable = GetQueryableInQuery(holdingType);
 
             if (queryable == null)
@@ -323,12 +364,14 @@ public class QueryContext<T> where T : class
                 {
                     return NullVale;
                 }
-                
+
+                outputType = value.GetType();
                 return AddParam(dbParams, value, namePrefix, ref propertyIndex);
             }
 
 
             var propertyMetadata = queryable.GetMetadataPropertyFromName(memberExpression.Member.Name);
+            outputType = propertyMetadata.Type;
             return $"{queryable.GetName()}.{propertyMetadata.PropertyName}";
         }
 
@@ -357,8 +400,6 @@ public class QueryContext<T> where T : class
                 return string.Join(", ", x);
             }
         }
-        Console.WriteLine(expression.NodeType);
-
         return "<EMPTY>";
     }
 
