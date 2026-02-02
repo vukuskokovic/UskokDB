@@ -13,6 +13,8 @@ public class ClockTable : TimedModelItem
     public TimeSpan End { get; set; }
     public DateTime Date { get; set; }
     public string Str { get; set; }
+    public bool TestBool { get; set; }
+    public int TestInt { get; set; }
 }
 
 public abstract class TimedModelItem

@@ -10,9 +10,11 @@ using UskokDB;
 using UskokDB.Attributes;
 using UskokDB.Query;
 
-UskokDb.SetSqlDialect(SqlDialect.PostgreSql);
+UskokDb.SetSqlDialect(SqlDialect.MySql);
+UskokDb.InitLinqMethodRegistry();
 var dbContext = new ShopDbContext();
 var t = TimeSpan.Zero;
+Guid d = Guid.NewGuid();
 var stuff = dbContext.Clock.Query().Select<ClockTable, ClockTable>((clock) =>
     new ClockTable()
     {
@@ -20,8 +22,10 @@ var stuff = dbContext.Clock.Query().Select<ClockTable, ClockTable>((clock) =>
         End = clock.End,
         Kurac = clock.Kurac + clock.End,
         Start = clock.Start < t? clock.Start : t,
-        Test = clock.Test,
-        Str = clock.Str + "312" + "541"
+        Test = d,
+        Str = clock.Str.Substring(0, 1),
+        TestBool = clock.Str.Substring(0, 1) == null,
+        TestInt = 3
     }, true);
 
 

@@ -10,7 +10,7 @@ using UskokDB.Attributes;
 using UskokDB.Query;
 
 namespace UskokDB;
-public class DbTable<T>(DbContext context) : Queryable<T> where T : class, new()
+public class DbTable<T>(DbContext context) : Queryable<T>, IJoinable<T> where T : class, new()
 {
     private static string InsertInitString { get; } = $"INSERT INTO {TableName} VALUES ";
     public DbContext DbContext { get; } = context;
@@ -304,4 +304,32 @@ public class DbTable<T>(DbContext context) : Queryable<T> where T : class, new()
     public override string GetName() => TableName;
     public override Type GetUnderlyingType() => typeof(T);
     public override string? PreQuery(List<DbParam> _) => null;
+    
+    public QueryContext<T> Join<T0>(Queryable<T0> queryable, Expression<Func<T, T0, bool>> selector)
+    {
+        var queryContext = new QueryContext<T>(this, DbContext);
+        queryContext.AddJoin(JoinType.Inner, selector, queryable);
+        return queryContext;
+    }
+
+    public QueryContext<T> Join<T0, T1>(Queryable<T0> queryable, Expression<Func<T0, T1, bool>> selector)
+    {
+        var queryContext = new QueryContext<T>(this, DbContext);
+        queryContext.AddJoin(JoinType.Inner, selector, queryable);
+        return queryContext;
+    }
+
+    public QueryContext<T> LeftJoin<T0>(Queryable<T0> queryable, Expression<Func<T, T0, bool>> selector)
+    {
+        var queryContext = new QueryContext<T>(this, DbContext);
+        queryContext.AddJoin(JoinType.Left, selector, queryable);
+        return queryContext;
+    }
+
+    public QueryContext<T> LeftJoin<T0, T1>(Queryable<T0> queryable, Expression<Func<T0, T1, bool>> selector)
+    {
+        var queryContext = new QueryContext<T>(this, DbContext);
+        queryContext.AddJoin(JoinType.Left, selector, queryable);
+        return queryContext;
+    }
 }

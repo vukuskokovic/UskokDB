@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace UskokDB.Query;
 
-public class QueryContext<T> where T : class
+public class QueryContext<T> : IJoinable<T>, IQueryContext where T : class
 {
     private DbContext DbContext { get; set; }
     private IQueryable Creator { get; set; }
@@ -28,27 +28,22 @@ public class QueryContext<T> where T : class
     private List<(Expression, bool)> OrderByExpressions { get; } = [];
     
 
-    private QueryContext<T> AddJoin(JoinType type, Expression expression, IQueryable joinOn, List<IQueryable> queryables)
+    internal QueryContext<T> AddJoin(JoinType type, Expression expression, IQueryable joinOn)
     {
         Joins.Add(new JoinData()
         {
             Expression = expression,
             JoinType = type,
-            Queryables = queryables,
             JoinOn = joinOn
         });
         Queryables.Add(joinOn);
-        foreach (var q in queryables)
-        {
-            Queryables.Add(q);
-        }
         return this;
     }
     
-    public QueryContext<T> Join<T0>(Queryable<T0> queryable, Expression<Func<T, T0, bool>> selector) => AddJoin(JoinType.Inner, selector.Body, queryable, []);
-    public QueryContext<T> Join<T0, T1>(Queryable<T0> queryable, Expression<Func<T0, T1, bool>> selector) => AddJoin(JoinType.Inner, selector.Body, queryable, []);
-    public QueryContext<T> LeftJoin<T0>(Queryable<T0> queryable, Expression<Func<T, T0, bool>> selector) => AddJoin(JoinType.Left, selector.Body, queryable, []);
-    public QueryContext<T> LeftJoin<T0, T1>(Queryable<T0> queryable, Expression<Func<T0, T1, bool>> selector) => AddJoin(JoinType.Left, selector.Body, queryable, []);
+    public QueryContext<T> Join<T0>(Queryable<T0> queryable, Expression<Func<T, T0, bool>> selector) => AddJoin(JoinType.Inner, selector.Body, queryable);
+    public QueryContext<T> Join<T0, T1>(Queryable<T0> queryable, Expression<Func<T0, T1, bool>> selector) => AddJoin(JoinType.Inner, selector.Body, queryable);
+    public QueryContext<T> LeftJoin<T0>(Queryable<T0> queryable, Expression<Func<T, T0, bool>> selector) => AddJoin(JoinType.Left, selector.Body, queryable);
+    public QueryContext<T> LeftJoin<T0, T1>(Queryable<T0> queryable, Expression<Func<T0, T1, bool>> selector) => AddJoin(JoinType.Left, selector.Body, queryable);
 
     private QueryContext<T> SetWere(Expression exp)
     {
@@ -239,7 +234,7 @@ public class QueryContext<T> where T : class
     }
 
     private readonly Dictionary<object, string> _alreadyExistingParams = [];
-    private string AddParam(List<DbParam> paramList, object value, string namePrefix, ref int propertyIndex)
+    public string AddParam(List<DbParam> paramList, object value, string namePrefix, ref int propertyIndex)
     {
         if (_alreadyExistingParams.TryGetValue(value, out var existingParamName))
         {
@@ -263,14 +258,13 @@ public class QueryContext<T> where T : class
         return Queryables.FirstOrDefault(q => q.GetUnderlyingType() == type);
     }
     
-    private string AppendExpression(Expression expression, string namePrefix, List<DbParam> dbParams, ref int propertyIndex, out Type? outputType)
+    public string AppendExpression(Expression expression, string namePrefix, List<DbParam> dbParams, ref int propertyIndex, out Type? outputType)
     {
         outputType = null;
         if (expression is UnaryExpression { NodeType: ExpressionType.Convert or ExpressionType.ConvertChecked } u)
         {
             return AppendExpression(u.Operand, namePrefix, dbParams, ref propertyIndex, out outputType);
         }
-
         if (expression is ConditionalExpression conditionalExpression)
         {
             var testCompiled = AppendExpression(conditionalExpression.Test, namePrefix, dbParams, ref propertyIndex, out _);
@@ -319,7 +313,7 @@ public class QueryContext<T> where T : class
                             return $"CONCAT({leftExpCompiled}, {rightExpCompiled})";
                         }
                         else
-                        {
+                        { 
                             return $"({leftExpCompiled} || {rightExpCompiled})";
                         }
                     }
@@ -340,7 +334,6 @@ public class QueryContext<T> where T : class
             outputType = constantExpression.Value.GetType();
             return AddParam(dbParams, constantExpression.Value, namePrefix, ref propertyIndex);
         }
-
         if (expression is MemberExpression memberExpression)
         {
             var holdingType = memberExpression.Expression?.Type ?? memberExpression.Member.DeclaringType;
@@ -353,6 +346,11 @@ public class QueryContext<T> where T : class
 
             if (queryable == null)
             {
+                if (UskokDb.MemberTranslators.TryGetValue(memberExpression.Member, out var memberTranslator))
+                {
+                    return memberTranslator.Translate(this, memberExpression, namePrefix, dbParams, ref propertyIndex,
+                        out outputType);
+                }
                 var value = Expression
                     .Lambda(
                         Expression.Convert(memberExpression, typeof(object))
@@ -400,6 +398,16 @@ public class QueryContext<T> where T : class
                 return string.Join(", ", x);
             }
         }
+
+        if (expression is MethodCallExpression methodCallExpression)
+        {
+            if (UskokDb.MethodTranslators.TryGetValue(methodCallExpression.Method, out var translator))
+            {
+                return translator.Translate(this, methodCallExpression, namePrefix, dbParams, ref propertyIndex,
+                    out outputType);
+            }
+        }
+        
         return "<EMPTY>";
     }
 
