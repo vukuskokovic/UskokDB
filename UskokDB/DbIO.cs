@@ -213,6 +213,10 @@ public static class DbIO
         }
 
         var type = property.Type;
+        if (type == typeof(bool) && value is int i)
+        {
+            return i != 0;
+        }
         if (PrimitiveTypes.Contains(type))
         {
             return value;

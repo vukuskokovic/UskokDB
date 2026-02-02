@@ -11,9 +11,9 @@
 		<PackageTags>db, database, orm, mysql</PackageTags>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<Authors>Vuk Uskokovic</Authors>
-		<Version>5.2.3</Version>
+		<Version>5.2.4</Version>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<PackageReleaseNotes>Select/where now goes up to 8 tables if you need more think about what you are doing</PackageReleaseNotes>
+		<PackageReleaseNotes>Little fix for boolean reading</PackageReleaseNotes>
 		<Description>A c# orm made for simple and fast usage.
 Supports linq to sql, table mapping and creation, generic type reading and much more.</Description>
 		<TargetFrameworks>net8.0;net9.0;netstandard2.0</TargetFrameworks>

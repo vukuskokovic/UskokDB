@@ -1,3 +1,5 @@
+# Documentation is outdated and missing a lot of new key features new documentation yet to come
+
 # UskokDB
 #### UskokDB is a .NET orm designed with simplicity and ease of use in mind its great for idea testing fast prototyping and could even be production ready. It supports MySql, SqlLite, PostgreSql with full table creation strings, LinqToSql, and normal raw queries. You can define your tables and in 2 lines of codes generate your full db, you can write WHERE queries with linq in seconds and get the list of items from a generic function, you dont have to worry abount reading from db or writing, inserting is a one-liner. Updating/Deleting data with linq also is very easy. Let's get started.
 
