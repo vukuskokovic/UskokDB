@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace UskokDB.Query;
@@ -16,7 +17,7 @@ public interface IQueryItem
     public TypeMetadataProperty GetMetadataPropertyFromName(string name);
 }
 
-public abstract class QueryItem<T>(DbContext dbContext) : IQueryItem, IJoinable<T>, IOrderable<T>, IGroupable<T>, ISelectable, ILimitable<T> where T : class, new()
+public abstract class QueryItem<T>(DbContext dbContext) : IQueryItem, IJoinable<T>, IOrderable<T>, IGroupable<T>, ISelectable, ILimitable<T>, IInstantQueryable<T> where T : class, new()
 {
     private static Type? _metadataType;
     private static Dictionary<string, TypeMetadataProperty>? _nameToPropertyMap;
@@ -126,4 +127,17 @@ public abstract class QueryItem<T>(DbContext dbContext) : IQueryItem, IJoinable<
 
     public QueryContext<T> Limit(int limit) =>
         new QueryContext<T>(this, dbContext).Limit(limit);
+
+    public Task<T?> QuerySingleAsync(CancellationToken cancellationToken = default, bool printToConsole = false) =>
+        new QueryContext<T>(this, dbContext).QuerySingleAsync(cancellationToken, printToConsole);
+
+    public Task<T?> QuerySingleWhereAsync(Expression<Func<T, bool>> where, CancellationToken cancellationToken = default,
+        bool printToConsole = false) =>
+        new QueryContext<T>(this, dbContext).QuerySingleWhereAsync(where, cancellationToken, printToConsole);
+
+    public Task<List<T>> QueryAsync(CancellationToken cancellationToken = default, bool printToConsole = false) =>
+        new QueryContext<T>(this, dbContext).QueryAsync(cancellationToken, printToConsole);
+
+    public Task<List<T>> QueryWhereAsync(Expression<Func<T, bool>> where, CancellationToken cancellationToken = default, bool printToConsole = false) =>
+        new QueryContext<T>(this, dbContext).QueryWhereAsync(where, cancellationToken, printToConsole);
 }
