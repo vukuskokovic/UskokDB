@@ -51,6 +51,12 @@ public abstract class QueryItem<T>(DbContext dbContext) : IQueryItem, IJoinable<
 
     public QueryContext<T> OrderByDescending<T0>(Expression<Func<T0, object>> expression) =>
         new QueryContext<T>(this, dbContext).OrderByDescending(expression);
+    
+    public QueryContext<T> OrderBy(Expression<Func<T, object>> expression) =>
+        new QueryContext<T>(this, dbContext).OrderBy(expression);
+
+    public QueryContext<T> OrderByDescending(Expression<Func<T, object>> expression) =>
+        new QueryContext<T>(this, dbContext).OrderByDescending(expression);
 
     public QueryContext<T> Where(Expression<Func<T, bool>> selector) =>
         new QueryContext<T>(this, dbContext).Where(selector);

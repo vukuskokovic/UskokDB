@@ -81,6 +81,18 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext, ISelectable, IOrdera
         return this;
     }
     
+    public QueryContext<T> OrderBy(Expression<Func<T, object>> expression)
+    {
+        OrderByExpressions.Add((expression.Body, false));
+        return this;
+    }
+    
+    public QueryContext<T> OrderByDescending(Expression<Func<T, object>> expression)
+    {
+        OrderByExpressions.Add((expression.Body, true));
+        return this;
+    }
+    
     public QueryContext<T> GroupBy<T0>(Expression<Func<T0, object>> expression)
     {
         GroupByExpressions.Add(expression.Body);
