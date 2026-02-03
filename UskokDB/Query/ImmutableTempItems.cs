@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace UskokDB.Query;
 
-public class ImmutableTempItems<T>(IEnumerable<T> items) : TempItems<T>(items), IDisposable
+public sealed class ImmutableTempItems<T>(DbContext context, IEnumerable<T> items) : TempItems<T>(context, items), IDisposable
     where T : class, new()
 {
     private bool WasCompiled { get; set; } = false;

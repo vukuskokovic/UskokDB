@@ -9,24 +9,15 @@ using pikac;
 using UskokDB;
 using UskokDB.Attributes;
 using UskokDB.Query;
+using UskokDB.Query.QueryFunctions;
 
 UskokDb.SetSqlDialect(SqlDialect.MySql);
 UskokDb.InitLinqMethodRegistry();
 var dbContext = new ShopDbContext();
 var t = TimeSpan.Zero;
 Guid d = Guid.NewGuid();
-var stuff = dbContext.Clock.Query().Select<ClockTable, ClockTable>((clock) =>
-    new ClockTable()
-    {
-        Date = clock.Date,
-        End = clock.End,
-        Kurac = clock.Kurac + clock.End,
-        Start = clock.Start < t? clock.Start : t,
-        Test = d,
-        Str = clock.Str.Substring(0, 1),
-        TestBool = clock.Str.Substring(0, 1) == null,
-        TestInt = 3
-    }, true);
+var list = new List<bool>() { false, true };
+var stuff = dbContext.Clock.GroupBy((c) => c.TestBool).GroupBy((c) => c.Date).Where(c => Sql.In(c.TestBool, list)).Limit(3).QueryAsync(printToConsole:true);
 
 
 public class PlayerVehicleRead

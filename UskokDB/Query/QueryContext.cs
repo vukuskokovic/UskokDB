@@ -6,29 +6,33 @@ using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace UskokDB.Query;
 
-public class QueryContext<T> : IJoinable<T>, IQueryContext where T : class
+public class QueryContext<T> : IJoinable<T>, IQueryContext, ISelectable, IOrderable<T>, IGroupable<T>, IQueryable<T>, IInstantQueryable<T>, ILimitable<T> where T : class, new()
 {
     private DbContext DbContext { get; set; }
-    private IQueryable Creator { get; set; }
+    private IQueryItem Creator { get; set; }
     private List<JoinData> Joins { get; } = [];
-    private HashSet<IQueryable> Queryables { get; } = [];
+    private HashSet<IQueryItem> QueryItems { get; } = [];
     private Tuple<Expression, Type>? SelectData { get; set; }
-    internal QueryContext(IQueryable creator, DbContext context)
+    private bool IsInstantQuery { get; set; } = false;
+    private int? LimitValue { get; set; } = null;
+    internal QueryContext(IQueryItem creator, DbContext context)
     {
         Creator = creator;
-        Queryables.Add(creator);
+        QueryItems.Add(creator);
         DbContext = context;
     }
 
     private Expression? WhereExpression { get; set; } = null;
     private List<(Expression, bool)> OrderByExpressions { get; } = [];
+    private List<Expression> GroupByExpressions { get; } = [];
     
 
-    internal QueryContext<T> AddJoin(JoinType type, Expression expression, IQueryable joinOn)
+    private QueryContext<T> AddJoin(JoinType type, Expression expression, IQueryItem joinOn)
     {
         Joins.Add(new JoinData()
         {
@@ -36,20 +40,23 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext where T : class
             JoinType = type,
             JoinOn = joinOn
         });
-        Queryables.Add(joinOn);
+        QueryItems.Add(joinOn);
         return this;
     }
-    
-    public QueryContext<T> Join<T0>(Queryable<T0> queryable, Expression<Func<T, T0, bool>> selector) => AddJoin(JoinType.Inner, selector.Body, queryable);
-    public QueryContext<T> Join<T0, T1>(Queryable<T0> queryable, Expression<Func<T0, T1, bool>> selector) => AddJoin(JoinType.Inner, selector.Body, queryable);
-    public QueryContext<T> LeftJoin<T0>(Queryable<T0> queryable, Expression<Func<T, T0, bool>> selector) => AddJoin(JoinType.Left, selector.Body, queryable);
-    public QueryContext<T> LeftJoin<T0, T1>(Queryable<T0> queryable, Expression<Func<T0, T1, bool>> selector) => AddJoin(JoinType.Left, selector.Body, queryable);
 
+    #region Joins
+    public QueryContext<T> Join<T0>(QueryItem<T0> queryItem, Expression<Func<T, T0, bool>> selector) where T0: class, new() => AddJoin(JoinType.Inner, selector.Body, queryItem);
+    public QueryContext<T> Join<T0, T1>(QueryItem<T0> queryItem, Expression<Func<T0, T1, bool>> selector) where T0: class, new() => AddJoin(JoinType.Inner, selector.Body, queryItem);
+    public QueryContext<T> LeftJoin<T0>(QueryItem<T0> queryItem, Expression<Func<T, T0, bool>> selector) where T0: class, new() => AddJoin(JoinType.Left, selector.Body, queryItem);
+    public QueryContext<T> LeftJoin<T0, T1>(QueryItem<T0> queryItem, Expression<Func<T0, T1, bool>> selector)  where T0: class, new() => AddJoin(JoinType.Left, selector.Body, queryItem);
+    #endregion
+    #region Where
     private QueryContext<T> SetWere(Expression exp)
     {
         WhereExpression = exp;
         return this;
     }
+    public QueryContext<T> Where(Expression<Func<T, bool>> selector) => SetWere(selector.Body);
     public QueryContext<T> Where<T0>(Expression<Func<T0, bool>> selector) => SetWere(selector.Body);
     public QueryContext<T> Where<T0, T1>(Expression<Func<T0, T1, bool>> selector) => SetWere(selector.Body);
     public QueryContext<T> Where<T0, T1, T2>(Expression<Func<T0, T1, T2, bool>> selector) => SetWere(selector.Body);
@@ -59,6 +66,8 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext where T : class
     public QueryContext<T> Where<T0, T1, T2, T3, T4, T5, T6>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, bool>> selector) => SetWere(selector.Body);
     public QueryContext<T> Where<T0, T1, T2, T3, T4, T5, T6, T7>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, bool>> selector) => SetWere(selector.Body);
     public QueryContext<T> Where<T0, T1, T2, T3, T4, T5, T6, T7, T8>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, bool>> selector) => SetWere(selector.Body);
+    #endregion
+    #region OrderBy/GroupBy
 
     public QueryContext<T> OrderBy<T0>(Expression<Func<T0, object>> expression)
     {
@@ -71,9 +80,20 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext where T : class
         OrderByExpressions.Add((expression.Body, true));
         return this;
     }
+    
+    public QueryContext<T> GroupBy<T0>(Expression<Func<T0, object>> expression)
+    {
+        GroupByExpressions.Add(expression.Body);
+        return this;
+    }
+    
+    public QueryContext<T> GroupBy(Expression<Func<T, object>> expression)
+    {
+        GroupByExpressions.Add(expression.Body);
+        return this;
+    }
 
-
-    //Made a region since this is a little cancer
+    #endregion
     #region  Select
 
     private Task<List<TRead>> FinishSelect<TRead>(Expression expression, bool printToConsole = false) where TRead : class, new ()
@@ -127,12 +147,48 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext where T : class
         => FinishSelect<TRead>(selector.Body, printToConsole);
 
     #endregion
-    
+    #region Instant queries
+
+    public Task<T?> QuerySingleAsync(CancellationToken cancellationToken = default, bool printToConsole = false)
+    {
+        IsInstantQuery = true;
+        return DbContext.QuerySingleAsync<T>(this.Compile(printToConsole).CreateCommandWithConnection(this.DbContext.DbConnection), cancellationToken);
+    }
+
+    public Task<T?> QuerySingleWhereAsync(Expression<Func<T, bool>> where, CancellationToken cancellationToken = default,
+        bool printToConsole = false)
+    {
+        IsInstantQuery = true;
+        SetWere(where.Body);
+        return DbContext.QuerySingleAsync<T>(this.Compile(printToConsole).CreateCommandWithConnection(this.DbContext.DbConnection), cancellationToken);
+    }
+
+    public Task<List<T>> QueryAsync(CancellationToken cancellationToken = default, bool printToConsole = false)
+    {
+        IsInstantQuery = true;
+        return DbContext.QueryAsync<T>(this.Compile(printToConsole).CreateCommandWithConnection(this.DbContext.DbConnection), cancellationToken);
+    }
+
+    public Task<List<T>> QueryWhereAsync(Expression<Func<T, bool>> where, CancellationToken cancellationToken = default, bool printToConsole = false)
+    {
+        IsInstantQuery = true;
+        SetWere(where.Body);
+        return DbContext.QueryAsync<T>(this.Compile(printToConsole).CreateCommandWithConnection(this.DbContext.DbConnection), cancellationToken);
+    }
+
+    #endregion
+
+    public QueryContext<T> Limit(int limit)
+    {
+        LimitValue = limit;
+        return this;
+    }
+
     public DbPopulateParamsResult Compile(bool printToConsole = false)
     {
         var finalQuery  = new StringBuilder();
         List<DbParam> dbParams = [];
-        foreach (var q in Queryables)
+        foreach (var q in QueryItems)
         {
             var compiledString = q.PreQuery(dbParams);
             if (compiledString == null) continue;
@@ -159,6 +215,18 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext where T : class
             finalQuery.AppendLine(AppendExpression(WhereExpression, "@where_", dbParams, ref x, out _));
         }
 
+        if (GroupByExpressions.Count > 0)
+        {
+            int paramIndex = 0;
+            finalQuery.Append("GROUP BY ");
+            for (int i = 0; i < GroupByExpressions.Count; i++)
+            {
+                if (i > 0) finalQuery.Append(", ");
+                finalQuery.Append(AppendExpression(GroupByExpressions[i], "@group_", dbParams, ref paramIndex, out _));
+            }
+            finalQuery.AppendLine();
+        }
+        
         if (OrderByExpressions.Count > 0)
         {
             int paramIndex = 0;
@@ -172,6 +240,13 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext where T : class
                 finalQuery.Append(desc ? " DESC" : string.Empty);
             }
             finalQuery.AppendLine();
+        }
+
+        if (LimitValue != null)
+        {
+            var x = 0;
+            var paramName = AddParam(dbParams, LimitValue.Value, "@limit_", ref x);
+            finalQuery.AppendLine($"LIMIT {paramName}");
         }
 
 
@@ -189,7 +264,14 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext where T : class
     
     private string CompileSelect(List<DbParam> paramList)
     {
-        if (SelectData == null) throw new UskokDbException("Select data is null");
+        if (SelectData == null)
+        {
+            if (!IsInstantQuery)
+                throw new UskokDbException("SelectData is null, in other terms you queries but no select was provided");
+            
+            
+            return $"{Creator.GetName()}.*";
+        }
         var (expression, readType) = SelectData;
         if (expression is not MemberInitExpression memberInitExpression)
             throw new Exception($"Select is not MemberInitExpression, Type: {expression.GetType().FullName}");
@@ -253,9 +335,9 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext where T : class
         return name;
     }
 
-    private IQueryable? GetQueryableInQuery(Type type)
+    private IQueryItem? GetQueryableInQuery(Type type)
     {
-        return Queryables.FirstOrDefault(q => q.GetUnderlyingType() == type);
+        return QueryItems.FirstOrDefault(q => q.GetUnderlyingType() == type);
     }
     
     public string AppendExpression(Expression expression, string namePrefix, List<DbParam> dbParams, ref int propertyIndex, out Type? outputType)
@@ -401,10 +483,19 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext where T : class
 
         if (expression is MethodCallExpression methodCallExpression)
         {
-            if (UskokDb.MethodTranslators.TryGetValue(methodCallExpression.Method, out var translator))
+            var method = methodCallExpression.Method;
+            if (method.IsGenericMethod)
+                method = method.GetGenericMethodDefinition();
+            
+            if (UskokDb.MethodTranslators.TryGetValue(method, out var translator))
             {
                 return translator.Translate(this, methodCallExpression, namePrefix, dbParams, ref propertyIndex,
                     out outputType);
+            }
+            else
+            {
+                Console.WriteLine($"{methodCallExpression.Method.Name}");
+                Console.WriteLine("Method call not found");
             }
         }
         
@@ -412,41 +503,4 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext where T : class
     }
 
     private const string NullVale = "NULL";
-}
-
-public interface IQueryable
-{
-    public string GetName();
-    public Type GetUnderlyingType();
-    public string? PreQuery(List<DbParam> paramList);
-
-    public Type GetTypeMetadata();
-
-    public TypeMetadataProperty GetMetadataPropertyFromName(string name);
-}
-
-public abstract class Queryable<T> : IQueryable
-{
-    private static Type? _metadataType;
-    private static Dictionary<string, TypeMetadataProperty>? _nameToPropertyMap;
-    public abstract string GetName();
-    public abstract Type GetUnderlyingType();
-    public abstract string? PreQuery(List<DbParam> paramList);
-    
-    public Type GetTypeMetadata()
-    {
-        _metadataType ??= typeof(TypeMetadata<>).MakeGenericType(typeof(T));
-        return _metadataType;
-    }
-
-    private Dictionary<string, TypeMetadataProperty> PropertyToNameMap()
-    {
-        _nameToPropertyMap ??= (Dictionary<string, TypeMetadataProperty>)GetTypeMetadata().GetProperty("NameToPropertyMap")!.GetValue(null);
-        return _nameToPropertyMap;
-    }
-
-    public TypeMetadataProperty GetMetadataPropertyFromName(string name)
-    {
-        return PropertyToNameMap()[name];
-    }
 }

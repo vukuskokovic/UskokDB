@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UskokDB.Query.FunctionMapping;
+using UskokDB.Query.FunctionMapping.Sql;
 using UskokDB.Query.FunctionMapping.StringFunctions;
 using UskokDB.Query.PropertyMapping;
 using UskokDB.Query.PropertyMapping.Date;
@@ -19,11 +21,13 @@ public static class UskokDb
         var subStringTranslator = new SubStringMethodTranslator();
         MethodTranslators[SubStringMethodTranslator.Method1] = subStringTranslator;
         MethodTranslators[SubStringMethodTranslator.Method2] = subStringTranslator;
+        MethodTranslators[ValueInTranslator.Method] = new ValueInTranslator();
 
         MemberTranslators[HourPropertyTranslator.Member] = new HourPropertyTranslator();
         MemberTranslators[MinutePropertyTranslator.Member] = new MinutePropertyTranslator();
         MemberTranslators[SecondPropertyTranslator.Member] = new SecondPropertyTranslator();
         MemberTranslators[TimeOfDayPropertyTranslator.Member] = new TimeOfDayPropertyTranslator();
+        
 
         _registryCreated = true;
     }

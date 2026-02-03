@@ -1,13 +1,10 @@
-using System;
-using System.Collections.Generic;
 using System.Linq.Expressions;
-using UskokDB.Query;
 
-namespace UskokDB;
+namespace UskokDB.Query;
 
 internal class JoinData
 {
-    internal IQueryable JoinOn { get; set; } = null!;
+    internal IQueryItem JoinOn { get; set; } = null!;
     internal JoinType JoinType { get; set; }
     internal Expression Expression { get; set; } = null!;
 }

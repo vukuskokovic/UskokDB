@@ -1,16 +1,19 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 
 namespace UskokDB.Query;
 
-public class TempItems<T> : Queryable<T> where T : class
+public class TempItems<T> : QueryItem<T> where T : class, new()
 {
     private List<T> Items { get; }
+    private DbContext DbContext { get; }
     
-    public TempItems(IEnumerable<T> items)
+    public TempItems(DbContext dbContext, IEnumerable<T> items) : base(dbContext)
     {
+        DbContext = dbContext;
         if (items is List<T> list)
         {
             Items = list;
@@ -35,8 +38,6 @@ public class TempItems<T> : Queryable<T> where T : class
             return _name;
         }
     }
-
-    public QueryContext<T> Query(DbContext context) => new (this, context);
 
     public override string GetName() => Name;
 

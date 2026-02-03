@@ -10,7 +10,7 @@ using UskokDB.Attributes;
 using UskokDB.Query;
 
 namespace UskokDB;
-public class DbTable<T>(DbContext context) : Queryable<T>, IJoinable<T> where T : class, new()
+public class DbTable<T>(DbContext context) : QueryItem<T>(context) where T : class, new()
 {
     private static string InsertInitString { get; } = $"INSERT INTO {TableName} VALUES ";
     public DbContext DbContext { get; } = context;
@@ -229,24 +229,9 @@ public class DbTable<T>(DbContext context) : Queryable<T>, IJoinable<T> where T 
     public Task InsertAsync(params T[] items) => DbContext.ExecuteAsync(BuildInsertCommand(InsertInitString, items));
     public Task InsertAsync(CancellationToken cancellationToken, params T[] items) => DbContext.ExecuteAsync(BuildInsertCommand(InsertInitString, items), cancellationToken: cancellationToken);
     public Task InsertAsync(IEnumerable<T> items, CancellationToken cancellationToken = default) => DbContext.ExecuteAsync(BuildInsertCommand(InsertInitString, items), cancellationToken: cancellationToken);
-    
-    public QueryBuilder<T> Where(Expression<Func<T, bool>> expression) => new QueryBuilder<T>(this).Where(expression);
-    public QueryBuilder<T> Where(string query, object? paramsObject = null) => new QueryBuilder<T>(this).Where(query, paramsObject);
-    public QueryBuilder<T> OrderBy(params string[] columns) => new QueryBuilder<T>(this).OrderBy(columns);
-
-    public QueryBuilder<T> GroupBy(params string[] columns) => new QueryBuilder<T>(this).GroupBy(columns);
 
     public Task<List<T>> QueryAllAsync(CancellationToken cancellationToken = default) =>
         DbContext.QueryAsync<T>($"SELECT * FROM {TableName}", null, cancellationToken);
-    public Task<List<T>> QueryWhere(Expression<Func<T, bool>> expression, CancellationToken cancellationToken = default) =>
-        new QueryBuilder<T>(this).Where(expression).QueryAsync(cancellationToken);
-    public Task<List<T>> QueryWhere(string query, object? paramsObject = null, CancellationToken cancellationToken = default) =>
-        new QueryBuilder<T>(this).Where(query, paramsObject).QueryAsync(cancellationToken);
-    public Task<T?> QuerySingleAsync(Expression<Func<T, bool>> expression, CancellationToken cancellationToken = default) =>
-        new QueryBuilder<T>(this).Where(expression).QuerySingleAsync(cancellationToken);
-    public Task<T?> QuerySingleAsync(string query, object? paramsObject = null, CancellationToken cancellationToken = default) =>
-        new QueryBuilder<T>(this).Where(query, paramsObject).QuerySingleAsync(cancellationToken);
-
     public Task<int> UpdateAsync(Expression<Func<T>> update, Expression<Func<T, bool>>? where = null, CancellationToken cancellationToken = default) =>
         DbContext.ExecuteAsync(BuildUpdateCommand(update, where), cancellationToken: cancellationToken);
     
@@ -299,37 +284,7 @@ public class DbTable<T>(DbContext context) : Queryable<T>, IJoinable<T> where T 
     public void AppendDeleteByKey(IEnumerable<T> items) => DbContext.AppendQueueCmd(BuildDeleteByKey(items));
     public void AppendDeleteByKey(params T[] items) => DbContext.AppendQueueCmd(BuildDeleteByKey(items));
 
-    public QueryContext<T> Query() => new(this, DbContext);
-
     public override string GetName() => TableName;
     public override Type GetUnderlyingType() => typeof(T);
     public override string? PreQuery(List<DbParam> _) => null;
-    
-    public QueryContext<T> Join<T0>(Queryable<T0> queryable, Expression<Func<T, T0, bool>> selector)
-    {
-        var queryContext = new QueryContext<T>(this, DbContext);
-        queryContext.AddJoin(JoinType.Inner, selector, queryable);
-        return queryContext;
-    }
-
-    public QueryContext<T> Join<T0, T1>(Queryable<T0> queryable, Expression<Func<T0, T1, bool>> selector)
-    {
-        var queryContext = new QueryContext<T>(this, DbContext);
-        queryContext.AddJoin(JoinType.Inner, selector, queryable);
-        return queryContext;
-    }
-
-    public QueryContext<T> LeftJoin<T0>(Queryable<T0> queryable, Expression<Func<T, T0, bool>> selector)
-    {
-        var queryContext = new QueryContext<T>(this, DbContext);
-        queryContext.AddJoin(JoinType.Left, selector, queryable);
-        return queryContext;
-    }
-
-    public QueryContext<T> LeftJoin<T0, T1>(Queryable<T0> queryable, Expression<Func<T0, T1, bool>> selector)
-    {
-        var queryContext = new QueryContext<T>(this, DbContext);
-        queryContext.AddJoin(JoinType.Left, selector, queryable);
-        return queryContext;
-    }
 }
