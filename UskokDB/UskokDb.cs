@@ -22,6 +22,7 @@ public static class UskokDb
         MethodTranslators[SubStringMethodTranslator.Method1] = subStringTranslator;
         MethodTranslators[SubStringMethodTranslator.Method2] = subStringTranslator;
         MethodTranslators[ValueInTranslator.Method] = new ValueInTranslator();
+        //MethodTranslators[ExistsTranslator.Method] = new ExistsTranslator();
 
         MemberTranslators[HourPropertyTranslator.Member] = new HourPropertyTranslator();
         MemberTranslators[MinutePropertyTranslator.Member] = new MinutePropertyTranslator();

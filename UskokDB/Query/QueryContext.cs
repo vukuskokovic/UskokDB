@@ -451,13 +451,32 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext, ISelectable, IOrdera
                     )
                     .Compile()
                     .DynamicInvoke();
-
+                
                 if (value == null)
                 {
                     return NullVale;
                 }
-
                 outputType = value.GetType();
+                if (value is IEnumerable enumerable)
+                {
+                    StringBuilder builder = new StringBuilder("(");
+                    bool anyFound = false;
+                    foreach (var enumerableItem in enumerable)
+                    {
+                        var paramName = AddParam(dbParams,  enumerableItem, namePrefix, ref propertyIndex);
+                        builder.Append(paramName);
+                        builder.Append(", ");
+                        anyFound = true;
+                    }
+
+                    builder.Length -= 2;
+                    builder.Append(")");
+
+                    if (!anyFound) 
+                        return null!;
+                    
+                    return builder.ToString();
+                }
                 return AddParam(dbParams, value, namePrefix, ref propertyIndex);
             }
 

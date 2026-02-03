@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Text;
 using UskokDB.Query.QueryFunctions;
 
 namespace UskokDB.Query.FunctionMapping.Sql;
@@ -23,8 +24,15 @@ public class ValueInTranslator : ISqlMethodTranslator
         
         
         var enumeratorArg = methodCall.Arguments[1]!;
-        Console.WriteLine(enumeratorArg.GetType().FullName);
-        
-        return "Test";
+        var enumeratorCompiled = queryContext.AppendExpression(enumeratorArg, namePrefix, dbParams, ref propertyIndex, out _);
+        if (enumeratorCompiled == null!)
+        {
+            return "0=1";
+        }
+
+        StringBuilder builder = new StringBuilder(paramName);
+        builder.Append(" IN ");
+        builder.Append(enumeratorCompiled);
+        return builder.ToString();
     }
 }

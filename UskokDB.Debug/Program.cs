@@ -16,8 +16,10 @@ UskokDb.InitLinqMethodRegistry();
 var dbContext = new ShopDbContext();
 var t = TimeSpan.Zero;
 Guid d = Guid.NewGuid();
-var list = new List<bool>() { false, true };
-var stuff = dbContext.Clock.GroupBy((c) => c.TestBool).GroupBy((c) => c.Date).Where(c => Sql.In(c.TestBool, list)).Limit(3).QueryAsync(printToConsole:true);
+var arr = new bool[] { true, false };
+var stuff = dbContext.Clock.Where
+    (c => Sql.Exists(dbContext.Clock.Where((y) => y.TestBool == c.TestBool)))
+    .QueryAsync(printToConsole:true);
 
 
 public class PlayerVehicleRead
