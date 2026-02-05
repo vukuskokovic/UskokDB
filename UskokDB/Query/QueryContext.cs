@@ -469,7 +469,7 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext, ISelectable, IOrdera
                     return NullVale;
                 }
                 outputType = value.GetType();
-                if (value is IEnumerable enumerable)
+                if (value is IEnumerable enumerable and not string)
                 {
                     StringBuilder builder = new StringBuilder("(");
                     bool anyFound = false;
