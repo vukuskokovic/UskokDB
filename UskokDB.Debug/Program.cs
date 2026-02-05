@@ -19,7 +19,7 @@ Guid d = Guid.NewGuid();
 var arr = new bool[] { true, false };
 var stuff = dbContext.Clock.Where
     (c => Sql.Exists(dbContext.Clock.Where((y) => y.TestBool == c.TestBool)))
-    .Exists(printToConsole:true);
+    .Count(printToConsole:true);
 
 
 public class PlayerVehicleRead

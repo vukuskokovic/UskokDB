@@ -66,4 +66,5 @@ public interface ISelectable
         where TRead : class, new();
 
     public Task<bool> Exists(bool printToConsole = false);
+    public Task<int> Count(bool printToConsole = false);
 }

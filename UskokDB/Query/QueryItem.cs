@@ -126,8 +126,11 @@ public abstract class QueryItem<T>(DbContext dbContext) : IQueryItem, IJoinable<
         new QueryContext<T>(this, dbContext).Select(selector, printToConsole);
 
     public Task<bool> Exists(bool printToConsole = false)
-        => new QueryContext<T>(this, dbContext).Exists();
-    
+        => new QueryContext<T>(this, dbContext).Exists(printToConsole);
+
+    public Task<int> Count(bool printToConsole = false)
+        => new QueryContext<T>(this, dbContext).Count(printToConsole);
+
 
     public QueryContext<T> Limit(int limit) =>
         new QueryContext<T>(this, dbContext).Limit(limit);

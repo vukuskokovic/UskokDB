@@ -164,6 +164,12 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext, ISelectable, IOrdera
         return DbContext.ExistsAsync(this.Compile(printToConsole).CreateCommandWithConnection(this.DbContext.DbConnection));
     }
 
+    public Task<int> Count(bool printToConsole = false)
+    {
+        OverrideSelect = "COUNT(*)";
+        return DbContext.ExecuteScalar<int>(this.Compile(printToConsole).CreateCommandWithConnection(this.DbContext.DbConnection));
+    }
+
     #endregion
     #region Instant queries
     private string BuildInstantQuerySelect() => $"{Creator.GetName()}.*";
