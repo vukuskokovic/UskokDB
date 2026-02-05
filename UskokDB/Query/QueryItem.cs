@@ -125,6 +125,10 @@ public abstract class QueryItem<T>(DbContext dbContext) : IQueryItem, IJoinable<
     public Task<List<TRead>> Select<TRead, T0, T1, T2, T3, T4, T5, T6, T7, T8>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRead>> selector, bool printToConsole = false) where TRead : class, new() =>
         new QueryContext<T>(this, dbContext).Select(selector, printToConsole);
 
+    public Task<bool> Exists(bool printToConsole = false)
+        => new QueryContext<T>(this, dbContext).Exists();
+    
+
     public QueryContext<T> Limit(int limit) =>
         new QueryContext<T>(this, dbContext).Limit(limit);
 

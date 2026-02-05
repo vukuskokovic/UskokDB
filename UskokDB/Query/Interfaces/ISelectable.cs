@@ -64,4 +64,6 @@ public interface ISelectable
     public Task<List<TRead>> Select<TRead, T0, T1, T2, T3, T4, T5, T6, T7, T8>(
         Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRead>> selector, bool printToConsole = false)
         where TRead : class, new();
+
+    public Task<bool> Exists(bool printToConsole = false);
 }

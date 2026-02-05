@@ -18,7 +18,7 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext, ISelectable, IOrdera
     private List<JoinData> Joins { get; } = [];
     private HashSet<IQueryItem> QueryItems { get; } = [];
     private Tuple<Expression, Type>? SelectData { get; set; }
-    private bool IsInstantQuery { get; set; } = false;
+    private string? OverrideSelect { get; set; }
     private int? LimitValue { get; set; } = null;
     internal QueryContext(IQueryItem creator, DbContext context)
     {
@@ -157,33 +157,39 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext, ISelectable, IOrdera
         => FinishSelect<TRead>(selector.Body, printToConsole);
     public Task<List<TRead>> Select<TRead, T0, T1, T2, T3, T4, T5, T6, T7, T8>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRead>> selector, bool printToConsole = false) where TRead : class, new()
         => FinishSelect<TRead>(selector.Body, printToConsole);
+    public Task<bool> Exists(bool printToConsole = false)
+    {
+        OverrideSelect = "1";
+        Limit(1);
+        return DbContext.ExistsAsync(this.Compile(printToConsole).CreateCommandWithConnection(this.DbContext.DbConnection));
+    }
 
     #endregion
     #region Instant queries
-
+    private string BuildInstantQuerySelect() => $"{Creator.GetName()}.*";
     public Task<T?> QuerySingleAsync(CancellationToken cancellationToken = default, bool printToConsole = false)
     {
-        IsInstantQuery = true;
+        OverrideSelect = BuildInstantQuerySelect();
         return DbContext.QuerySingleAsync<T>(this.Compile(printToConsole).CreateCommandWithConnection(this.DbContext.DbConnection), cancellationToken);
     }
 
     public Task<T?> QuerySingleWhereAsync(Expression<Func<T, bool>> where, CancellationToken cancellationToken = default,
         bool printToConsole = false)
     {
-        IsInstantQuery = true;
+        OverrideSelect = BuildInstantQuerySelect();
         SetWere(where.Body);
         return DbContext.QuerySingleAsync<T>(this.Compile(printToConsole).CreateCommandWithConnection(this.DbContext.DbConnection), cancellationToken);
     }
 
     public Task<List<T>> QueryAsync(CancellationToken cancellationToken = default, bool printToConsole = false)
     {
-        IsInstantQuery = true;
+        OverrideSelect = BuildInstantQuerySelect();
         return DbContext.QueryAsync<T>(this.Compile(printToConsole).CreateCommandWithConnection(this.DbContext.DbConnection), cancellationToken);
     }
 
     public Task<List<T>> QueryWhereAsync(Expression<Func<T, bool>> where, CancellationToken cancellationToken = default, bool printToConsole = false)
     {
-        IsInstantQuery = true;
+        OverrideSelect = BuildInstantQuerySelect();
         SetWere(where.Body);
         return DbContext.QueryAsync<T>(this.Compile(printToConsole).CreateCommandWithConnection(this.DbContext.DbConnection), cancellationToken);
     }
@@ -276,13 +282,13 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext, ISelectable, IOrdera
     
     private string CompileSelect(List<DbParam> paramList)
     {
+        if (OverrideSelect != null)
+        {
+            return OverrideSelect;
+        }
         if (SelectData == null)
         {
-            if (!IsInstantQuery)
-                throw new UskokDbException("SelectData is null, in other terms you queries but no select was provided");
-            
-            
-            return $"{Creator.GetName()}.*";
+            throw new UskokDbException("SelectData is null, in other terms you queries but no select was provided");
         }
         var (expression, readType) = SelectData;
         if (expression is not MemberInitExpression memberInitExpression)
