@@ -27,7 +27,7 @@ public static class DbIOOptions
 
 public static class DbIO
 {
-    private static readonly HashSet<Type> PrimitiveTypes = [
+    internal static readonly HashSet<Type> PrimitiveTypes = [
         typeof(char),
         typeof(char?),
         typeof(byte),

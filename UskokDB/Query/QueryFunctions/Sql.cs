@@ -14,4 +14,14 @@ public static class Sql
     {
         throw new UskokDbException("This functions is not for use outside of linq queries");
     }
+
+    public static T Cast<T>(object value)
+    {
+        throw new UskokDbException("This functions is not for use outside of linq queries");
+    }
+
+    public static T RawFunction<T>(string functionName, params object[] args)
+    {
+        throw new UskokDbException("This functions is not for use outside of linq queries");
+    }
 }

@@ -20,7 +20,7 @@ internal static class DbInitialization
         }
     }
     
-    private static readonly Dictionary<Type, Dictionary<SqlDialect, string>> TypeInDatabase = new()
+    internal static readonly Dictionary<Type, Dictionary<SqlDialect, string>> TypeInDatabase = new()
     {
         [typeof(int)] = new Dictionary<SqlDialect, string>
         {
