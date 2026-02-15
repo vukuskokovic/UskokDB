@@ -20,6 +20,7 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext, ISelectable, IOrdera
     private Tuple<Expression, Type>? SelectData { get; set; }
     private string? OverrideSelect { get; set; }
     private int? LimitValue { get; set; } = null;
+    private int? OffsetValue { get; set; } = null;
     internal QueryContext(IQueryItem creator, DbContext context)
     {
         Creator = creator;
@@ -27,7 +28,7 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext, ISelectable, IOrdera
         DbContext = context;
     }
 
-    private Expression? WhereExpression { get; set; } = null;
+    private List<Expression> WhereExpressions { get; set; } = [];
     private List<(Expression, bool)> OrderByExpressions { get; } = [];
     private List<Expression> GroupByExpressions { get; } = [];
     
@@ -53,7 +54,7 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext, ISelectable, IOrdera
     #region Where
     private QueryContext<T> SetWere(Expression exp)
     {
-        WhereExpression = exp;
+        WhereExpressions.Add(exp);
         return this;
     }
     public QueryContext<T> Where(Expression<Func<T, bool>> selector) => SetWere(selector.Body);
@@ -207,6 +208,12 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext, ISelectable, IOrdera
         LimitValue = limit;
         return this;
     }
+    
+    public QueryContext<T> Offset(int offset)
+    {
+        OffsetValue = offset;
+        return this;
+    }
 
     public DbPopulateParamsResult Compile(bool printToConsole = false)
     {
@@ -232,11 +239,22 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext, ISelectable, IOrdera
             joinIndex++;
         }
 
-        if (WhereExpression != null)
+        if (WhereExpressions.Count > 0)
         {
             finalQuery.Append("WHERE ");
             int x = 0;
-            finalQuery.AppendLine(AppendExpression(WhereExpression, "@where_", dbParams, ref x, out _));
+            for (int i = 0; i < WhereExpressions.Count; i++)
+            {
+                finalQuery.Append(AppendExpression(WhereExpressions[i], "@where_", dbParams, ref x, out _));
+                if (i + 1 == WhereExpressions.Count)
+                {
+                    finalQuery.AppendLine();
+                    continue;
+                }
+
+                finalQuery.Append(" AND ");
+            }
+            
         }
 
         if (GroupByExpressions.Count > 0)
@@ -271,6 +289,13 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext, ISelectable, IOrdera
             var x = 0;
             var paramName = AddParam(dbParams, LimitValue.Value, "@limit_", ref x);
             finalQuery.AppendLine($"LIMIT {paramName}");
+        }
+        
+        if (OffsetValue != null)
+        {
+            var x = 0;
+            var paramName = AddParam(dbParams, OffsetValue.Value, "@offset_", ref x);
+            finalQuery.AppendLine($"OFFSET {paramName}");
         }
 
 

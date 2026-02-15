@@ -134,6 +134,9 @@ public abstract class QueryItem<T>(DbContext dbContext) : IQueryItem, IJoinable<
 
     public QueryContext<T> Limit(int limit) =>
         new QueryContext<T>(this, dbContext).Limit(limit);
+    
+    public QueryContext<T> Offset(int limit) =>
+        new QueryContext<T>(this, dbContext).Offset(limit);
 
     public Task<T?> QuerySingleAsync(CancellationToken cancellationToken = default, bool printToConsole = false) =>
         new QueryContext<T>(this, dbContext).QuerySingleAsync(cancellationToken, printToConsole);

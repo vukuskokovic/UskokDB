@@ -19,6 +19,8 @@ Guid d = Guid.NewGuid();
 var arr = new bool[] { true, false };
 var stuff = dbContext.Clock.Where
     (c => c.Date.TimeOfDay > t)
+    .Where(c => c.TestBool == true)
+    .Offset(3)
     .Count(printToConsole:true);
 
 
