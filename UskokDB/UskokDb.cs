@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UskokDB.Query.FunctionMapping;
+using UskokDB.Query.FunctionMapping.MathFunctions;
 using UskokDB.Query.FunctionMapping.Sql;
 using UskokDB.Query.FunctionMapping.StringFunctions;
 using UskokDB.Query.PropertyMapping;
@@ -24,6 +25,19 @@ public static class UskokDb
         MethodTranslators[ValueInTranslator.Method] = new ValueInTranslator();
         MethodTranslators[RawFunctionTranslator.Method] = new RawFunctionTranslator();
         MethodTranslators[CastTranslator.Method] = new CastTranslator();
+        MethodTranslators[LikeTranslator.Method] = new LikeTranslator();
+
+        #region Math
+        foreach (var method in AbsTranslator.Method)
+            MethodTranslators[method] = new AbsTranslator();
+        foreach (var method in CeilingTranslator.Method)
+            MethodTranslators[method] = new CeilingTranslator();
+        foreach (var method in FloorTranslator.Method)
+            MethodTranslators[method] = new FloorTranslator();
+        #endregion
+        
+        
+        
         //MethodTranslators[ExistsTranslator.Method] = new ExistsTranslator();
 
         MemberTranslators[HourPropertyTranslator.Member] = new HourPropertyTranslator();

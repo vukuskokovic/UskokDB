@@ -24,4 +24,9 @@ public static class Sql
     {
         throw new UskokDbException("This functions is not for use outside of linq queries");
     }
+
+    public static bool Like(string searchString, string format)
+    {
+        throw new UskokDbException("This functions is not for use outside of linq queries");
+    }
 }

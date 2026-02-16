@@ -19,10 +19,10 @@ Guid d = Guid.NewGuid();
 var arr = new bool[] { true, false };
 var stuff = dbContext.Clock.Where
     (c => c.Date.TimeOfDay > t)
-    .Where(c => c.TestBool == true)
+    .Where(c => Math.Floor(3.2f) > 3)
     .Offset(3)
-    .Count(printToConsole:true);
-
+    .Limit(4)
+    .Exists(true);
 
 public class PlayerVehicleRead
 {

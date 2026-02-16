@@ -21,7 +21,9 @@ public static class TypeMetadata<T> where T : class
     static TypeMetadata()
     {
         var classType = typeof(T);
-        var properties = classType.GetProperties();
+        var properties = classType.GetProperties()
+            .Where(p => p.GetCustomAttribute<NotMappedAttribute>() is null)
+            .OrderBy(p => p.MetadataToken);
         foreach (var property in properties.Where(p => p.GetCustomAttribute<NotMappedAttribute>() is null))
         {
             var meta = new TypeMetadataProperty(property);
