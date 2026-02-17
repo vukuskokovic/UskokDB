@@ -17,11 +17,8 @@ var dbContext = new ShopDbContext();
 var t = TimeSpan.Zero;
 Guid d = Guid.NewGuid();
 var arr = new bool[] { true, false };
-var stuff = dbContext.Clock.Where
-    (c => c.Date.TimeOfDay > t)
-    .Where(c => Math.Floor(3.2f) > 3)
-    .Offset(3)
-    .Limit(4)
+var stuff = dbContext.Clock
+    .Where(c => Sql.Coalesce<string>(c.Str + "412", "312", null) == "nigger")
     .Exists(true);
 
 public class PlayerVehicleRead

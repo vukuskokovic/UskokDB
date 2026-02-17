@@ -29,4 +29,9 @@ public static class Sql
     {
         throw new UskokDbException("This functions is not for use outside of linq queries");
     }
+
+    public static T Coalesce<T>(params T?[] values)
+    {
+        throw new UskokDbException("This functions is not for use outside of linq queries");
+    }
 }

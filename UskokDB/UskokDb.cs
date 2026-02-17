@@ -26,6 +26,7 @@ public static class UskokDb
         MethodTranslators[RawFunctionTranslator.Method] = new RawFunctionTranslator();
         MethodTranslators[CastTranslator.Method] = new CastTranslator();
         MethodTranslators[LikeTranslator.Method] = new LikeTranslator();
+        MethodTranslators[CoalesceTranslator.Method] = new CoalesceTranslator();
 
         #region Math
         foreach (var method in AbsTranslator.Method)
