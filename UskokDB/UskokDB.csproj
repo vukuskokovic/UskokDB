@@ -11,9 +11,9 @@
 		<PackageTags>db, database, orm, mysql</PackageTags>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<Authors>Vuk Uskokovic</Authors>
-		<Version>5.3.12</Version>
+		<Version>5.3.13</Version>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<PackageReleaseNotes>Added Coalesce translator</PackageReleaseNotes>
+		<PackageReleaseNotes>Added json array support, objects too should be working fine</PackageReleaseNotes>
 		<Description>A c# orm made for simple and fast usage.
 Supports linq to sql, table mapping and creation, generic type reading and much more.</Description>
 		<TargetFrameworks>net8.0;net9.0;netstandard2.0</TargetFrameworks>

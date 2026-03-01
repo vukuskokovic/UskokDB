@@ -1,5 +1,7 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 
 namespace UskokDB.Query.QueryFunctions;
 
@@ -20,7 +22,7 @@ public static class Sql
         throw new UskokDbException("This functions is not for use outside of linq queries");
     }
 
-    public static T RawFunction<T>(string functionName, params object[] args)
+    public static T Function<T>(string functionName, params object[] args)
     {
         throw new UskokDbException("This functions is not for use outside of linq queries");
     }
@@ -31,6 +33,16 @@ public static class Sql
     }
 
     public static T Coalesce<T>(params T?[] values)
+    {
+        throw new UskokDbException("This functions is not for use outside of linq queries");
+    }
+
+    public static T[] JsonCreateArray<T, T0>(Expression<Func<T0, T>> expression)
+    {
+        throw new UskokDbException("This functions is not for use outside of linq queries");
+    }
+    
+    public static T[] JsonCreateArray<T, T0, T1>(Expression<Func<T0, T1, T>> expression)
     {
         throw new UskokDbException("This functions is not for use outside of linq queries");
     }

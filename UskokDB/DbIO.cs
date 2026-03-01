@@ -21,7 +21,11 @@ public static class DbIOOptions
     public static Func<string?, Type, object?>? JsonReader { get; set; } = null;
     #endif
     
+#if !NETSTANDARD2_0
+    public static bool UseJsonForUnknownClassesAndStructs { get; set; } = true;
+#else
     public static bool UseJsonForUnknownClassesAndStructs { get; set; } = false;
+#endif
     public static Dictionary<Type, IColumnValueConverter> ParameterConverters { get; } = [];
 }
 
@@ -221,9 +225,9 @@ public static class DbIO
         {
             return value;
         }
-
         if (DbIOOptions.ParameterConverters.TryGetValue(type, out var parameterConverter))
         {
+            
             return parameterConverter.Read(value);
         }
 
@@ -231,7 +235,6 @@ public static class DbIO
         {
             return value;
         }
-
         if (DbIOOptions.JsonReader == null) throw new UskokDbIoException("Configured to use json for unknown types and structs but json reader was null");
         if (value is not string jsonStr)
             throw new UskokDbIoException($"Error reading type {type.FullName} did not get json string from the database");

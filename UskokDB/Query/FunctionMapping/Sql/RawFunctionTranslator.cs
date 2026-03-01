@@ -8,7 +8,7 @@ namespace UskokDB.Query.FunctionMapping.Sql;
 
 public class RawFunctionTranslator : ISqlMethodTranslator
 {
-    public static readonly MethodInfo Method = typeof(QueryFunctions.Sql).GetMethod(nameof(QueryFunctions.Sql.RawFunction))!;
+    public static readonly MethodInfo Method = typeof(QueryFunctions.Sql).GetMethod(nameof(QueryFunctions.Sql.Function))!;
     
     public string Translate(IQueryContext queryContext, MethodCallExpression methodCall, string namePrefix, List<DbParam> dbParams,
         ref int propertyIndex, out Type? outType)

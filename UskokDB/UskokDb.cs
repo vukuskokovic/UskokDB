@@ -4,6 +4,7 @@ using System.Reflection;
 using UskokDB.Query.FunctionMapping;
 using UskokDB.Query.FunctionMapping.MathFunctions;
 using UskokDB.Query.FunctionMapping.Sql;
+using UskokDB.Query.FunctionMapping.Sql.Json;
 using UskokDB.Query.FunctionMapping.StringFunctions;
 using UskokDB.Query.PropertyMapping;
 using UskokDB.Query.PropertyMapping.Date;
@@ -27,6 +28,8 @@ public static class UskokDb
         MethodTranslators[CastTranslator.Method] = new CastTranslator();
         MethodTranslators[LikeTranslator.Method] = new LikeTranslator();
         MethodTranslators[CoalesceTranslator.Method] = new CoalesceTranslator();
+        MethodTranslators[JsonCreateArrayTranslator.Method0] = new JsonCreateArrayTranslator();
+        MethodTranslators[JsonCreateArrayTranslator.Method1] = new JsonCreateArrayTranslator();
 
         #region Math
         foreach (var method in AbsTranslator.Method)
