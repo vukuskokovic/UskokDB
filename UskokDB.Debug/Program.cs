@@ -18,8 +18,13 @@ var dbContext = new ShopDbContext();
 var t = TimeSpan.Zero;
 Guid d = Guid.NewGuid();
 var arr = new bool[] { true, false };
-var admins = await dbContext.AdminUser
+var admins = dbContext.AdminUser
     .Join(dbContext.AdminPermission, (a, ap) => a.AdminId == ap.AdminId)
+    .Where(c => Sql.RawSql<bool>("EXISTS(SELECT 1 FROM tt)", new
+    {
+        test = "3",
+        p = 3
+    }))
     .GroupBy(x => x.AdminId)
     .Select<AdminRead, AdminUser, AdminPermissions>((a, ap) => new AdminRead()
     {
@@ -30,12 +35,7 @@ var admins = await dbContext.AdminUser
             Permission = ad.Permission
         }),
         Username = a.Username
-    });
-
-Console.WriteLine(JsonSerializer.Serialize(admins, new JsonSerializerOptions()
-{
-    WriteIndented = true
-}));
+    }, true);
 
 
 public class AdminTestRead
@@ -53,7 +53,7 @@ public class ShopDbContext : DbContext
 {
     public DbTable<AdminUser> AdminUser { get; }
     public DbTable<AdminPermissions> AdminPermission { get; }
-    public ShopDbContext() : base(() => new MySqlConnection(""))
+    public ShopDbContext() : base(() => new MySqlConnection("Server=localhost;User ID=root;Database=test"))
     {
         AdminUser = new DbTable<AdminUser>(this);
         AdminPermission = new DbTable<AdminPermissions>(this);

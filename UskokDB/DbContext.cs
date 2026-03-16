@@ -39,6 +39,9 @@ public abstract class DbContext : IDisposable
     }
     internal Task OpenConnectionIfNotOpen(CancellationToken cancellationToken = default)
     {
+        if(DbConnection.State == ConnectionState.Broken)
+            DbConnection.Close();
+        
         if (DbConnection.State != ConnectionState.Open)
             return DbConnection.OpenAsync(cancellationToken);
 

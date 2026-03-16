@@ -46,4 +46,9 @@ public static class Sql
     {
         throw new UskokDbException("This functions is not for use outside of linq queries");
     }
+
+    public static T RawSql<T>(string sql, object? paramsObject)
+    {
+        throw new UskokDbException("This functions is not for use outside of linq queries");
+    }
 }

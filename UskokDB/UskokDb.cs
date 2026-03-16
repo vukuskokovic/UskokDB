@@ -30,6 +30,7 @@ public static class UskokDb
         MethodTranslators[CoalesceTranslator.Method] = new CoalesceTranslator();
         MethodTranslators[JsonCreateArrayTranslator.Method0] = new JsonCreateArrayTranslator();
         MethodTranslators[JsonCreateArrayTranslator.Method1] = new JsonCreateArrayTranslator();
+        MethodTranslators[RawSqlTranslator.Method] = new RawSqlTranslator();
 
         #region Math
         foreach (var method in AbsTranslator.Method)
