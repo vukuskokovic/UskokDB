@@ -11,13 +11,23 @@ using System.Threading.Tasks;
 
 namespace UskokDB.Query;
 
-public class QueryContext<T> : IJoinable<T>, IQueryContext, ISelectable, IOrderable<T>, IGroupable<T>, IQueryable<T>, IInstantQueryable<T>, ILimitable<T> where T : class, new()
+public enum QueryType
+{
+    Select,
+    Update,
+    Delete
+}
+
+public class QueryContext<T> : IJoinable<T>, IQueryContext, ISelectable, IOrderable<T>, IGroupable<T>, IQueryable<T>, IInstantQueryable<T>, ILimitable<T>, IUpdatable<T>, IDeletable<T> where T : class, new()
 {
     private DbContext DbContext { get; set; }
     private IQueryItem Creator { get; set; }
+
+    private QueryType QueryType { get; set; } = QueryType.Select;
     private List<JoinData> Joins { get; } = [];
     private HashSet<IQueryItem> QueryItems { get; } = [];
     private Tuple<Expression, Type>? SelectData { get; set; }
+    private Expression? UpdateStatement { get; set; }
     private string? OverrideSelect { get; set; }
     private int? LimitValue { get; set; } = null;
     private int? OffsetValue { get; set; } = null;
@@ -202,7 +212,71 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext, ISelectable, IOrdera
     }
 
     #endregion
+    #region Update
+    private Task<int> ExecuteUpdate(Expression expression, bool printToConsole, CancellationToken cancellationToken = default)
+    {
+        SetUpdate(expression);
+        return DbContext.ExecuteAsync(Compile(printToConsole).CreateCommandWithConnection(DbContext.DbConnection), cancellationToken);
+    }
 
+    private QueryContext<T> SetUpdate(Expression expression)
+    {
+        QueryType = QueryType.Update;
+        UpdateStatement = expression;
+        return this;
+    }
+    public QueryContext<T> Update(Expression<Func<T>> updateFunc) => SetUpdate(updateFunc.Body);
+    public QueryContext<T> Update(Expression<Func<T, T>> updateFunc) => SetUpdate(updateFunc.Body);
+    public QueryContext<T> Update<T1>(Expression<Func<T, T1>> updateFunc) => SetUpdate(updateFunc.Body);
+    public QueryContext<T> Update<T1, T2>(Expression<Func<T, T1, T2>> updateFunc) => SetUpdate(updateFunc.Body);
+    public QueryContext<T> Update<T1, T2, T3>(Expression<Func<T, T1, T2, T3>> updateFunc) => SetUpdate(updateFunc.Body);
+    public QueryContext<T> Update<T1, T2, T3, T4>(Expression<Func<T, T1, T2, T3, T4>> updateFunc) => SetUpdate(updateFunc.Body);
+    public QueryContext<T> Update<T1, T2, T3, T4, T5>(Expression<Func<T, T1, T2, T3, T4, T5>> updateFunc) => SetUpdate(updateFunc.Body);
+    public QueryContext<T> Update<T1, T2, T3, T4, T5, T6>(Expression<Func<T, T1, T2, T3, T4, T5, T6>> updateFunc) => SetUpdate(updateFunc.Body);
+    public Task<int> UpdateAsync(Expression<Func<T>> updateFunc, bool printToConsole = false, CancellationToken cancellationToken = default)
+        => ExecuteUpdate(updateFunc.Body, printToConsole, cancellationToken);
+
+    public Task<int> UpdateAsync(Expression<Func<T, T>> updateFunc, bool printToConsole = false, CancellationToken cancellationToken = default)
+        => ExecuteUpdate(updateFunc.Body, printToConsole, cancellationToken);
+
+    public Task<int> UpdateAsync<T1>(Expression<Func<T, T1>> updateFunc, bool printToConsole = false, CancellationToken cancellationToken = default)
+        => ExecuteUpdate(updateFunc.Body, printToConsole, cancellationToken);
+
+    public Task<int> UpdateAsync<T1, T2>(Expression<Func<T, T1, T2>> updateFunc, bool printToConsole = false,
+        CancellationToken cancellationToken = default)
+        => ExecuteUpdate(updateFunc.Body, printToConsole, cancellationToken);
+
+    public Task<int> UpdateAsync<T1, T2, T3>(Expression<Func<T, T1, T2, T3>> updateFunc, bool printToConsole = false,
+        CancellationToken cancellationToken = default)
+        => ExecuteUpdate(updateFunc.Body, printToConsole, cancellationToken);
+
+    public Task<int> UpdateAsync<T1, T2, T3, T4>(Expression<Func<T, T1, T2, T3, T4>> updateFunc, bool printToConsole = false,
+        CancellationToken cancellationToken = default)
+        => ExecuteUpdate(updateFunc.Body, printToConsole, cancellationToken);
+
+    public Task<int> UpdateAsync<T1, T2, T3, T4, T5>(Expression<Func<T, T1, T2, T3, T4, T5>> updateFunc, bool printToConsole = false,
+        CancellationToken cancellationToken = default)
+        => ExecuteUpdate(updateFunc.Body, printToConsole, cancellationToken);
+
+    public Task<int> UpdateAsync<T1, T2, T3, T4, T5, T6>(Expression<Func<T, T1, T2, T3, T4, T5, T6>> updateFunc, bool printToConsole = false,
+        CancellationToken cancellationToken = default)
+        => ExecuteUpdate(updateFunc.Body, printToConsole, cancellationToken);
+
+    #endregion
+    #region Delete
+    public Task<int> DeleteAsync(bool printToConsole = false, CancellationToken cancellationToken = default)
+    {
+        QueryType = QueryType.Delete;
+        return DbContext.ExecuteAsync(Compile(printToConsole).CreateCommandWithConnection(DbContext.DbConnection), cancellationToken);
+    }
+
+    public QueryContext<T> Delete()
+    {
+        QueryType = QueryType.Delete;
+        return this;
+    }
+    #endregion
+    
     public QueryContext<T> Limit(int limit)
     {
         LimitValue = limit;
@@ -227,9 +301,23 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext, ISelectable, IOrdera
             finalQuery.Append(compiledString);
         }
 
-        finalQuery.Append("SELECT ");
-        finalQuery.Append(CompileSelect(dbParams));
-        finalQuery.Append(" FROM ");
+        switch (QueryType)
+        {
+            case QueryType.Select:
+                finalQuery.Append("SELECT ");
+                finalQuery.Append(CompileSelect(dbParams));
+                finalQuery.Append(" FROM ");
+                break;
+            case QueryType.Update:
+                finalQuery.Append("UPDATE ");
+                break;
+            case QueryType.Delete:
+                finalQuery.Append("DELETE FROM ");
+                break;
+            default:
+                throw new UskokDbException("Invalid query type");
+        }
+        
         finalQuery.Append(Creator.GetName());
         finalQuery.Append('\n');
         var joinIndex = 0;
@@ -237,6 +325,11 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext, ISelectable, IOrdera
         {
             CompileJoin(finalQuery, dbParams, join, joinIndex);
             joinIndex++;
+        }
+
+        if (QueryType == QueryType.Update)
+        {
+            finalQuery.AppendLine(CompileUpdate(dbParams));
         }
 
         if (WhereExpressions.Count > 0)
@@ -343,6 +436,38 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext, ISelectable, IOrdera
             
             i++;
             if (properties.Count != i) builder.Append(", ");
+        }
+        
+        return builder.ToString();
+    }
+
+    private string CompileUpdate(List<DbParam> paramList)
+    {
+        if (UpdateStatement == null)
+            throw new UskokDbException("Update was called but update expression is null");
+
+        if (UpdateStatement is not MemberInitExpression memberInitExpression)
+            throw new UskokDbException("Update is not MemberInitExpression");
+
+        StringBuilder builder = new();
+        var queryableName = Creator.GetName();
+        var i = 0;
+        var count = memberInitExpression.Bindings.Count;
+        foreach (var binding in memberInitExpression.Bindings)
+        {
+            if(binding is not MemberAssignment memberAssignment)throw new Exception("Binding in Select not MemberAssignment");
+
+            if (!TypeMetadata<T>.NameToPropertyMap.TryGetValue(memberAssignment.Member.Name, out var propertyMetadata))
+                throw new UskokDbException($"Could not find property metadata for {memberAssignment.Member.Name}");
+
+            builder.Append("SET ");
+            builder.Append(queryableName);
+            builder.Append('.');
+            builder.Append(propertyMetadata.PropertyName);
+            builder.Append('=');
+            builder.Append(AppendExpression(memberAssignment.Expression, "@update_p_", paramList, ref i, out _));
+            if (i + 1 < count)
+                builder.Append(", ");
         }
         
         return builder.ToString();

@@ -267,8 +267,7 @@ internal static class DbInitialization
             // Again will never happen but this is my error, so I should follow the string below
             ForeignKeyAction.DbDefault => "How did this even happen",
             // Will never happen unless someone does stupid shit like (ForeignKeyAction)10
-            // In which case they should follow the string below
-            _ => "Kill yourself"
+            _ => throw new UskokDbException("Invalid enum value parsed to foreign key action")
         });
     }
 

@@ -183,19 +183,17 @@ public static class DbIO
         if (valueToBePopulated is IDbManualReader fastReader)
         {
             fastReader.ReadValue(reader);
+            return valueToBePopulated;
         }
-        else
+
+        var properties = TypeMetadata<T>.Properties;
+        var len = properties.Count;
+        for (var ordinal = 0; ordinal < len; ordinal++)
         {
-            var len = TypeMetadata<T>.Properties.Count;
-            var values = new object[len];
-            var objectsRead = reader.GetValues(values);
-            if (len != objectsRead) throw new UskokDbIoException($"Values read is not same as objectsRead(read:{objectsRead}!=expected:{len})");
-            for (var ordinal = 0; ordinal < len; ordinal++)
-            {
-                var property = TypeMetadata<T>.Properties[ordinal];
-                ReadValue(values[ordinal], property, valueToBePopulated);
-            }
+            var property = properties[ordinal];
+            ReadValue(reader.IsDBNull(ordinal) ? null : reader.GetValue(ordinal), property, valueToBePopulated);
         }
+
         return valueToBePopulated;
     }
 

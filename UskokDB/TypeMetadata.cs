@@ -24,7 +24,7 @@ public static class TypeMetadata<T> where T : class
         var properties = classType.GetProperties()
             .Where(p => p.GetCustomAttribute<NotMappedAttribute>() is null)
             .OrderBy(p => p.MetadataToken);
-        foreach (var property in properties.Where(p => p.GetCustomAttribute<NotMappedAttribute>() is null))
+        foreach (var property in properties)
         {
             var meta = new TypeMetadataProperty(property);
             var getterMethod = CreateGetter(property);
@@ -44,7 +44,7 @@ public static class TypeMetadata<T> where T : class
         //Little try at performance in case the metadata is already fetched to avoid reflection cost
         TypeMetadata.MetaDataDict.TryAdd(typeof(T), typeof(TypeMetadata<T>));
         TypeMetadata.MetadataProperties.TryAdd(typeof(T), Properties);
-        TypeMetadata.MetadataProperties.TryAdd(typeof(T), Keys);
+        TypeMetadata.KeyProperties.TryAdd(typeof(T), Keys);
     }
     
     private static Func<T, object?> CreateGetter(PropertyInfo property)

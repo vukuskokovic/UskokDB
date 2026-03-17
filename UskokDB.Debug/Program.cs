@@ -1,61 +1,13 @@
-﻿using System.Data.Common;
-using System.Diagnostics;
-using System.Linq.Expressions;
-using MySqlConnector;
-using System.Text.Json;
-using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Running;
-using pikac;
+﻿using System.Text.Json;
 using UskokDB;
-using UskokDB.Attributes;
-using UskokDB.Query;
-using UskokDB.Query.QueryFunctions;
-
+using UskokDB.Debug;
+using UskokDB.Debug.Tables;
 
 UskokDb.SetSqlDialect(SqlDialect.MySql);
 UskokDb.InitLinqMethodRegistry();
-var dbContext = new ShopDbContext();
-var t = TimeSpan.Zero;
-Guid d = Guid.NewGuid();
-var arr = new bool[] { true, false };
-var admins = dbContext.AdminUser
-    .Join(dbContext.AdminPermission, (a, ap) => a.AdminId == ap.AdminId)
-    .Where(c => Sql.RawSql<bool>("EXISTS(SELECT 1 FROM tt)", new
-    {
-        test = "3",
-        p = 3
-    }))
-    .GroupBy(x => x.AdminId)
-    .Select<AdminRead, AdminUser, AdminPermissions>((a, ap) => new AdminRead()
-    {
-        AdminId = a.AdminId,
-        Permissions = Sql.JsonCreateArray<AdminTestRead, AdminPermissions>((ad) => new AdminTestRead()
-        {
-            AdminId = ad.AdminId,
-            Permission = ad.Permission
-        }),
-        Username = a.Username
-    }, true);
+await using var dbContext = new ShopDbContext();
+await dbContext.InitDb();
 
+var users = await dbContext.Users.Where(u => u.Name == "Luka").QueryAsync();
 
-public class AdminTestRead
-{
-    public Guid AdminId { get; set; }
-    public string Permission { get; set; }
-}
-public class AdminRead
-{
-    public Guid AdminId { get; set; }
-    public string Username { get; set; }
-    public AdminTestRead[] Permissions { get; set; }
-}
-public class ShopDbContext : DbContext
-{
-    public DbTable<AdminUser> AdminUser { get; }
-    public DbTable<AdminPermissions> AdminPermission { get; }
-    public ShopDbContext() : base(() => new MySqlConnection("Server=localhost;User ID=root;Database=test"))
-    {
-        AdminUser = new DbTable<AdminUser>(this);
-        AdminPermission = new DbTable<AdminPermissions>(this);
-    }
-}
+Console.WriteLine(JsonSerializer.Serialize(users));

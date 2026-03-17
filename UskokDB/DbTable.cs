@@ -79,150 +79,6 @@ public class DbTable<T>(DbContext context) : QueryItem<T>(context) where T : cla
         index++;
     }
     
-    public DbCommand BuildUpdateCommand(Expression<Func<T>> updateStatement, Expression<Func<T, bool>>? where = null)
-    {
-        if (updateStatement == null) throw new ArgumentException("Cannot be null, the only reason it could be in code is to remind to use where statement because if where is null all records are updated this is used to remind", nameof(updateStatement));
-        StringBuilder queryStringBuilder = new($"UPDATE {TableName} SET ");
-        if (updateStatement.Body is not MemberInitExpression initExpression) throw new ArgumentException("Must be a MemberInitExpression (i.e. () => new Record() { Name = \"Some name\" })", nameof(updateStatement));
-
-        List<DbParam> paramList = [];
-        int bindingCount = initExpression.Bindings.Count;
-        int counter = 0;
-        foreach (var binding in initExpression.Bindings)
-        {
-            if (binding is not MemberAssignment assigment)
-                throw new UskokDbInvalidLinqBinding();
-
-            if (!TypeMetadata<T>.NameToPropertyMap.TryGetValue(binding.Member.Name, out var propertyMetaData))
-                throw new UskokDbPropertyNotMapped(binding.Member.Name);
-
-            var valueWritten = LinqToSql.CompileExpression<T>(assigment.Expression, paramList);
-            queryStringBuilder.Append($"{propertyMetaData.PropertyName}={valueWritten}");
-            if (++counter == bindingCount) continue;
-
-            queryStringBuilder.Append(',');
-        }
-        if (where != null)
-        {
-            var cmd = LinqToSql.Convert(where, paramList).CompiledText;
-            queryStringBuilder.Append(" WHERE ");
-            queryStringBuilder.Append(cmd);
-        }
-
-        return new DbPopulateParamsResult()
-        {
-            CompiledText = queryStringBuilder.ToString(),
-            Params = paramList
-        }.CreateCommandWithConnection(DbContext.DbConnection);
-
-    }
-    
-    public DbCommand BuildUpdateCommandWithRowContext(Expression<Func<T, T>> updateStatement, Expression<Func<T, bool>>? where = null)
-    {
-        if (updateStatement == null) throw new ArgumentException("Cannot be null, the only reason it could be in code is to remind to use where statment because if where is null all records are updated this is used to remind", nameof(updateStatement));
-        StringBuilder queryStringBuilder = new($"UPDATE {TableName} SET ");
-        if (updateStatement.Body is not MemberInitExpression initExpression) throw new ArgumentException("Must be a MemberInitExpression (i.e. () => new Record() { Name = \"Some name\" })", nameof(updateStatement));
-
-        List<DbParam> paramList = [];
-        int bindingCount = initExpression.Bindings.Count;
-        int counter = 0;
-        foreach (var binding in initExpression.Bindings)
-        {
-            if (binding is not MemberAssignment assigment)
-                throw new ArgumentException("Bindings must be assigment (i.e. x => x.Name = \"New Name\")");
-
-            if (!TypeMetadata<T>.NameToPropertyMap.TryGetValue(binding.Member.Name, out var propertyMetaData))
-                throw new UskokDbPropertyNotMapped(binding.Member.Name);
-
-            var valueWritten = LinqToSql.CompileExpression<T>(assigment.Expression, paramList);
-            queryStringBuilder.Append($"{propertyMetaData.PropertyName}={valueWritten}");
-            if (++counter == bindingCount) continue;
-
-            queryStringBuilder.Append(',');
-        }
-        if (where != null)
-        {
-            var cmd = LinqToSql.Convert(where, paramList).CompiledText;
-            queryStringBuilder.Append(" WHERE ");
-            queryStringBuilder.Append(cmd);
-        }
-        
-        return new DbPopulateParamsResult()
-        {
-            CompiledText = queryStringBuilder.ToString(),
-            Params = paramList
-        }.CreateCommandWithConnection(DbContext.DbConnection);
-        
-    }
-
-    public DbCommand BuildDeleteCommand(Expression<Func<T, bool>>? where)
-    {
-        var queryStringBuilder = new StringBuilder("DELETE FROM ");
-        queryStringBuilder.Append(TableName);
-        DbPopulateParamsResult? populateParamsResult = null;
-        if(where != null)
-        {
-            queryStringBuilder.Append(" WHERE ");
-            populateParamsResult = LinqToSql.Convert(where);
-            queryStringBuilder.Append(populateParamsResult.CompiledText);
-        }
-
-        var finalCmd = queryStringBuilder.ToString();
-        populateParamsResult ??= new DbPopulateParamsResult()
-        {
-            CompiledText = finalCmd,
-            Params = []
-        };
-
-        populateParamsResult.CompiledText = finalCmd;
-            
-        return populateParamsResult.CreateCommandWithConnection(DbContext.DbConnection);
-    }
-
-    private void AppendDeleteByKeyLine(StringBuilder builder, T item)
-    {
-        var tableKeys = TypeMetadata<T>.Keys;
-        var tableKeysCount = tableKeys.Count;
-        if (tableKeysCount == 0)
-            throw new UskokDbTableNotPrimaryKey(TableName);
-        builder.Append("DELETE FROM ");
-        builder.Append(TableName);
-        builder.Append(" WHERE ");
-        int i = 0;
-        foreach (var keyPropertyMetadata in tableKeys)
-        {
-            var keyValue = keyPropertyMetadata.GetMethod(item);
-            var keyPropertyName = keyPropertyMetadata.PropertyName;
-            builder.Append(keyPropertyName);
-            builder.Append('=');
-            builder.Append(DbIO.WriteValue(keyValue));
-            if (i + 1 == tableKeysCount) break;
-            builder.Append(" AND ");
-            i++;
-        }
-
-        builder.Append(';');
-    }
-
-    public DbCommand BuildDeleteByKey(T item)
-    {
-        StringBuilder builder = new();
-        AppendDeleteByKeyLine(builder, item);
-        return DbContext.CreateCommand(builder.ToString());
-    }
-    
-    public DbCommand BuildDeleteByKey(IEnumerable<T> items)
-    {
-        StringBuilder builder = new();
-        foreach (var item in items)
-        {
-            AppendDeleteByKeyLine(builder, item);
-            builder.Append('\n');
-        }
-        
-        return DbContext.CreateCommand(builder.ToString());
-    }
-    
     #endregion
 
     public Task InsertAsync(T item, CancellationToken cancellationToken = default) => DbContext.ExecuteAsync(BuildInsertCommand(InsertInitString, item), cancellationToken: cancellationToken);
@@ -230,59 +86,35 @@ public class DbTable<T>(DbContext context) : QueryItem<T>(context) where T : cla
     public Task InsertAsync(CancellationToken cancellationToken, params T[] items) => DbContext.ExecuteAsync(BuildInsertCommand(InsertInitString, items), cancellationToken: cancellationToken);
     public Task InsertAsync(IEnumerable<T> items, CancellationToken cancellationToken = default) => DbContext.ExecuteAsync(BuildInsertCommand(InsertInitString, items), cancellationToken: cancellationToken);
 
+
+    private QueryContext<T> CreateQueryContext() => new(this, DbContext);
     public Task<List<T>> QueryAllAsync(CancellationToken cancellationToken = default) =>
         DbContext.QueryAsync<T>($"SELECT * FROM {TableName}", null, cancellationToken);
-    public Task<int> UpdateAsync(Expression<Func<T>> update, Expression<Func<T, bool>>? where = null, CancellationToken cancellationToken = default) =>
-        DbContext.ExecuteAsync(BuildUpdateCommand(update, where), cancellationToken: cancellationToken);
-    
-    public Task<int> UpdateAsync(Expression<Func<T, T>> update, Expression<Func<T, bool>>? where = null, CancellationToken cancellationToken = default) =>
-        DbContext.ExecuteAsync(BuildUpdateCommandWithRowContext(update, where), cancellationToken: cancellationToken);
-    
-    public Task<int> DeleteAsync(Expression<Func<T, bool>>? where, CancellationToken cancellationToken = default) =>
-        DbContext.ExecuteAsync(BuildDeleteCommand(where), cancellationToken: cancellationToken);
-    public Task<int> DeleteByKeyAsync(T item) =>
-        DbContext.ExecuteAsync(BuildDeleteByKey(item));
-    public Task<int> DeleteByKeyAsync(IEnumerable<T> items) =>
-        DbContext.ExecuteAsync(BuildDeleteByKey(items));
-    public Task<int> DeleteByKeyAsync(params T[] items) =>
-        DbContext.ExecuteAsync(BuildDeleteByKey(items));
-    
-    public async Task<bool> ExistsAsync(Expression<Func<T, bool>>? where, CancellationToken cancellationToken = default){
-        var queryStringBuilder = new StringBuilder("SELECT 1 FROM ");
-        queryStringBuilder.Append(TableName);
-        DbPopulateParamsResult? dbPopulateParamsResult = null;
-        if(where != null){
-            queryStringBuilder.Append(" WHERE ");
-            dbPopulateParamsResult = LinqToSql.Convert(where);
-            queryStringBuilder.Append(dbPopulateParamsResult.CompiledText);
-        }
+    public Task<int> UpdateAsync(Expression<Func<T>> update, Expression<Func<T, bool>> where, bool printToConsole = false, CancellationToken cancellationToken = default) =>
+        CreateQueryContext().Where(where).UpdateAsync(update, printToConsole, cancellationToken);
 
-        var finalQuery = queryStringBuilder.ToString();
+    public Task<int> UpdateAsync(Expression<Func<T, T>> update, Expression<Func<T, bool>> where, bool printToConsole = false,
+        CancellationToken cancellationToken = default) =>
+        CreateQueryContext().Where(where).UpdateAsync(update, printToConsole, cancellationToken);
 
-        #if !NETSTANDARD2_0
-        await using var command = DbContext.CreateCommand(finalQuery);
-        #else
-        using var command = DbContext.CreateCommand(finalQuery);
-        #endif
-        
-        dbPopulateParamsResult?.AddParamsToCommand(command);
-        
-        return await DbContext.ExistsAsync(command,  cancellationToken: cancellationToken);
-    }
+    public Task<int> DeleteAsync(Expression<Func<T, bool>> where, bool printToConsole = false, CancellationToken cancellationToken = default) =>
+        CreateQueryContext().Where(where).DeleteAsync(printToConsole, cancellationToken);
+
+    public Task<bool> ExistsAsync(Expression<Func<T, bool>> where, bool printToConsole = false,
+        CancellationToken cancellationToken = default)
+        => CreateQueryContext().Where(where).Exists(printToConsole);
 
 
     public void AppendInsert(T item) => DbContext.AppendQueueCmd(BuildInsertCommand(InsertInitString, item));
     public void AppendInsert(IEnumerable<T> items) => DbContext.AppendQueueCmd(BuildInsertCommand(InsertInitString, items));
     public void AppendInsert(params T[] items) => DbContext.AppendQueueCmd(BuildInsertCommand(InsertInitString, items));
-    public void AppendUpdate(Expression<Func<T>> update, Expression<Func<T, bool>>? where = null) =>
-        DbContext.AppendQueueCmd(BuildUpdateCommand(update, where));
-    public void AppendUpdate(Expression<Func<T, T>> update, Expression<Func<T, bool>>? where = null) =>
-        DbContext.AppendQueueCmd(BuildUpdateCommandWithRowContext(update, where));
+    public void AppendUpdate(Expression<Func<T>> update, Expression<Func<T, bool>> where, bool printToConsole = false) =>
+        DbContext.AppendExecute(CreateQueryContext().Where(where).Update(update), printToConsole);
+    public void AppendUpdate(Expression<Func<T, T>> update, Expression<Func<T, bool>> where, bool printToConsole = false) =>
+        DbContext.AppendExecute(CreateQueryContext().Where(where).Update(update), printToConsole);
     
-    public void AppendDelete(Expression<Func<T, bool>>? where) => DbContext.AppendQueueCmd(BuildDeleteCommand(where));
-    public void AppendDeleteByKey(T item) => DbContext.AppendQueueCmd(BuildDeleteByKey(item));
-    public void AppendDeleteByKey(IEnumerable<T> items) => DbContext.AppendQueueCmd(BuildDeleteByKey(items));
-    public void AppendDeleteByKey(params T[] items) => DbContext.AppendQueueCmd(BuildDeleteByKey(items));
+    public void AppendDelete(Expression<Func<T, bool>> where, bool printToConsole = false) => 
+        DbContext.AppendExecute(CreateQueryContext().Where(where).Delete(), printToConsole);
 
     public override string GetName() => TableName;
     public override Type GetUnderlyingType() => typeof(T);

@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using UskokDB.Query;
 
 namespace UskokDB;
 
@@ -260,11 +261,20 @@ public abstract class DbContext : IDisposable
         _queuedCommands.Add(cmd);
     }
 
-    public void AppendExecute(string query, object? paramsObject = null)
+    public void AppendExecute<T>(QueryContext<T> context, bool printToConsole = false) where T : class, new()
     {
-        var result = DbIO.PopulateParams(query, paramsObject);
-        AppendQueueCmd(result.CreateCommandWithConnection(DbConnection));
+        var command = context.Compile(printToConsole).CreateCommandWithConnection(DbConnection);
+        _queuedCommands.Add(command);
     }
+    
+    public void AppendExecute(DbPopulateParamsResult populateParamsResult)
+    {
+        var command = populateParamsResult.CreateCommandWithConnection(DbConnection);
+        _queuedCommands.Add(command);
+    }
+
+    public void AppendExecute(string query, object? paramsObject = null)
+        => AppendExecute(DbIO.PopulateParams(query, paramsObject));
     
     /// <summary>
     /// Executes all queued commands and clears the queue
@@ -274,16 +284,16 @@ public abstract class DbContext : IDisposable
     /// <returns></returns>
     public async Task ExecuteQueueAsync(CancellationToken cancellationToken = default)
     {
-        try
-        {
-            await OpenConnectionIfNotOpen(cancellationToken);
-            
+        await OpenConnectionIfNotOpen(cancellationToken);
+
 #if NETSTANDARD2_0
-        using DbTransaction dbTransaction = DbConnection.BeginTransaction();
+    using DbTransaction dbTransaction = DbConnection.BeginTransaction();
 #else
-            await using DbTransaction dbTransaction = await DbConnection.BeginTransactionAsync(cancellationToken);
+        await using DbTransaction dbTransaction = await DbConnection.BeginTransactionAsync(cancellationToken);
 #endif
 
+        try
+        {
             foreach (var command in _queuedCommands)
             {
                 command.Transaction = dbTransaction;
@@ -296,13 +306,22 @@ public abstract class DbContext : IDisposable
             await dbTransaction.CommitAsync(cancellationToken);
 #endif
         }
+        catch
+        {
+#if NETSTANDARD2_0
+        dbTransaction.Rollback();
+#else
+            await dbTransaction.RollbackAsync(cancellationToken);
+#endif
+            throw;
+        }
         finally
         {
-            #if NETSTANDARD2_0
-            ClearQueue();
-            #else
+#if NETSTANDARD2_0
+        ClearQueue();
+#else
             await ClearQueue();
-            #endif
+#endif
         }
     }
     #endregion
