@@ -291,6 +291,7 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext, ISelectable, IOrdera
 
     public DbPopulateParamsResult Compile(bool printToConsole = false)
     {
+        _alreadyExistingParams.Clear();
         var finalQuery  = new StringBuilder();
         List<DbParam> dbParams = [];
         foreach (var q in QueryItems)
@@ -451,6 +452,7 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext, ISelectable, IOrdera
 
         StringBuilder builder = new();
         var queryableName = Creator.GetName();
+        var paramIndex = 0;
         var i = 0;
         var count = memberInitExpression.Bindings.Count;
         foreach (var binding in memberInitExpression.Bindings)
@@ -460,14 +462,21 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext, ISelectable, IOrdera
             if (!TypeMetadata<T>.NameToPropertyMap.TryGetValue(memberAssignment.Member.Name, out var propertyMetadata))
                 throw new UskokDbException($"Could not find property metadata for {memberAssignment.Member.Name}");
 
-            builder.Append("SET ");
+            if(i == 0)
+                builder.Append("SET ");
+            
+            
             builder.Append(queryableName);
             builder.Append('.');
             builder.Append(propertyMetadata.PropertyName);
             builder.Append('=');
-            builder.Append(AppendExpression(memberAssignment.Expression, "@update_p_", paramList, ref i, out _));
+            builder.Append(AppendExpression(memberAssignment.Expression, "@update_p_", paramList, ref paramIndex, out _));
             if (i + 1 < count)
+            {
                 builder.Append(", ");
+            }
+
+            i++;
         }
         
         return builder.ToString();
@@ -692,7 +701,7 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext, ISelectable, IOrdera
             }
         }
         
-        return "<EMPTY>";
+        throw new UskokDbException("Unsupported expression: " + expression.NodeType);
     }
 
     private const string NullVale = "NULL";
