@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace UskokDB.Query;
 
-public interface IUpdatable<T> where T : class, new()
+public interface IUpdatable<T> where T : class
 {
     public QueryContext<T> Update(Expression<Func<T>> updateFunc);
     public QueryContext<T> Update(Expression<Func<T, T>> updateFunc);

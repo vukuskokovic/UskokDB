@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace UskokDB.Query;
 
-public interface IDeletable<T> where T : class, new()
+public interface IDeletable<T> where T : class
 {
     public QueryContext<T> Delete();
     public Task<int> DeleteAsync(bool printToConsole = false, CancellationToken cancellationToken = default);

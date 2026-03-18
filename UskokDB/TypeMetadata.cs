@@ -15,31 +15,53 @@ public static class TypeMetadata<T> where T : class
     public static List<TypeMetadataProperty> Properties { get; } = [];
     public static List<TypeMetadataProperty> Keys { get; } = [];
     public static Dictionary<string, TypeMetadataProperty> NameToPropertyMap { get; } = [];
+    public static bool IsAnonymous { get; }
+    
+    public static Func<T> Create { get; }
+    public static Func<object?[], T> AnonymousCreate { get; }
     
     
     
     static TypeMetadata()
     {
         var classType = typeof(T);
+        IsAnonymous = classType.Name.Contains("AnonymousType") &&
+                      classType is { IsSealed: true, IsGenericType: true };
         var properties = classType.GetProperties()
             .Where(p => p.GetCustomAttribute<NotMappedAttribute>() is null)
             .OrderBy(p => p.MetadataToken);
-        foreach (var property in properties)
+        
+        if (!IsAnonymous)
         {
-            var meta = new TypeMetadataProperty(property);
-            var getterMethod = CreateGetter(property);
-            
-
-            meta.GetMethod = (obj) => getterMethod((T)obj);
-            meta.SetterMethod = CreateSetter(property);
-            NameToPropertyMap[property.Name] = meta;
-            Properties.Add(meta);
-
-            if (meta.IsKey)
+            foreach (var property in properties)
             {
-                Keys.Add(meta);
+                var meta = new TypeMetadataProperty(property);
+                var getterMethod = CreateGetter(property);
+                meta.GetMethod = (obj) => getterMethod((T)obj);
+                meta.SetterMethod = CreateSetter(property);
+                NameToPropertyMap[property.Name] = meta;
+                Properties.Add(meta);
+
+                if (meta.IsKey)
+                {
+                    Keys.Add(meta);
+                }
             }
+
+            Create = Expression
+                .Lambda<Func<T>>(Expression.New(typeof(T)))
+                .Compile();
         }
+        else
+        {
+            foreach (var property in properties)
+            {
+                var meta = new TypeMetadataProperty(property);
+                Properties.Add(meta);
+            }
+            AnonymousCreate = CreateObjectArrayFactory();
+        }
+        
 
         //Little try at performance in case the metadata is already fetched to avoid reflection cost
         TypeMetadata.MetaDataDict.TryAdd(typeof(T), typeof(TypeMetadata<T>));
@@ -76,6 +98,47 @@ public static class TypeMetadata<T> where T : class
             valueParam
         );
         
+        return lambda.Compile();
+    }
+    
+    private static Func<object?[], T> CreateObjectArrayFactory()
+    {
+        var type = typeof(T);
+        var ctor = type.GetConstructors().First();
+        var parameters = ctor.GetParameters();
+
+        var arrayParam = Expression.Parameter(typeof(object[]), "values");
+
+        var args = new Expression[parameters.Length];
+
+        for (int i = 0; i < parameters.Length; i++)
+        {
+            var index = Expression.Constant(i);
+            var paramType = parameters[i].ParameterType;
+            var value = Expression.ArrayIndex(arrayParam, index);
+
+            Expression converted;
+
+            if (paramType.IsValueType && Nullable.GetUnderlyingType(paramType) == null)
+            {
+                converted = Expression.Condition(
+                    Expression.Equal(value, Expression.Constant(null)),
+                    Expression.Default(paramType),
+                    Expression.Convert(value, paramType)
+                );
+            }
+            else
+            {
+                converted = Expression.Convert(value, paramType);
+            }
+
+            args[i] = converted;
+        }
+
+        var newExpr = Expression.New(ctor, args);
+
+        var lambda = Expression.Lambda<Func<object?[], T>>(newExpr, arrayParam);
+
         return lambda.Compile();
     }
 }

@@ -81,11 +81,11 @@ public abstract class DbContext : IDisposable
     
     
     #endif
-    public Task<List<T>> QueryAsync<T>(string commandString, object? properties = null, CancellationToken cancellationToken = default) where T : class, new()
+    public Task<List<T>> QueryAsync<T>(string commandString, object? properties = null, CancellationToken cancellationToken = default) where T : class
         => QueryAsync<T>(CreateCommandFromParams(commandString, properties), cancellationToken);
     
 
-    public async Task<List<T>> QueryAsync<T>(DbCommand command, CancellationToken cancellationToken = default) where T : class, new()
+    public async Task<List<T>> QueryAsync<T>(DbCommand command, CancellationToken cancellationToken = default) where T : class
     {
         try
         {
@@ -115,12 +115,12 @@ public abstract class DbContext : IDisposable
     
     
     
-    public Task<T?> QuerySingleAsync<T>(string commandString, object? properties = null, CancellationToken cancellationToken = default) where T : class, new()
+    public Task<T?> QuerySingleAsync<T>(string commandString, object? properties = null, CancellationToken cancellationToken = default) where T : class
         => QuerySingleAsync<T>(CreateCommandFromParams(commandString, properties), cancellationToken);
     
 
     public async Task<T?> QuerySingleAsync<T>(DbCommand command,
-        CancellationToken cancellationToken = default) where T : class, new()
+        CancellationToken cancellationToken = default) where T : class
     {
         try
         {

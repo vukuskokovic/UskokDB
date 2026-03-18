@@ -18,7 +18,7 @@ public enum QueryType
     Delete
 }
 
-public class QueryContext<T> : IJoinable<T>, IQueryContext, ISelectable, IOrderable<T>, IGroupable<T>, IQueryable<T>, IInstantQueryable<T>, ILimitable<T>, IUpdatable<T>, IDeletable<T> where T : class, new()
+public class QueryContext<T> : IJoinable<T>, IQueryContext, ISelectable, IOrderable<T>, IGroupable<T>, IQueryable<T>, IInstantQueryable<T>, ILimitable<T>, IUpdatable<T>, IDeletable<T> where T : class
 {
     private DbContext DbContext { get; set; }
     private IQueryItem Creator { get; set; }
@@ -56,10 +56,10 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext, ISelectable, IOrdera
     }
 
     #region Joins
-    public QueryContext<T> Join<T0>(QueryItem<T0> queryItem, Expression<Func<T, T0, bool>> selector) where T0: class, new() => AddJoin(JoinType.Inner, selector.Body, queryItem);
-    public QueryContext<T> Join<T0, T1>(QueryItem<T0> queryItem, Expression<Func<T0, T1, bool>> selector) where T0: class, new() => AddJoin(JoinType.Inner, selector.Body, queryItem);
-    public QueryContext<T> LeftJoin<T0>(QueryItem<T0> queryItem, Expression<Func<T, T0, bool>> selector) where T0: class, new() => AddJoin(JoinType.Left, selector.Body, queryItem);
-    public QueryContext<T> LeftJoin<T0, T1>(QueryItem<T0> queryItem, Expression<Func<T0, T1, bool>> selector)  where T0: class, new() => AddJoin(JoinType.Left, selector.Body, queryItem);
+    public QueryContext<T> Join<T0>(QueryItem<T0> queryItem, Expression<Func<T, T0, bool>> selector) where T0: class => AddJoin(JoinType.Inner, selector.Body, queryItem);
+    public QueryContext<T> Join<T0, T1>(QueryItem<T0> queryItem, Expression<Func<T0, T1, bool>> selector) where T0: class => AddJoin(JoinType.Inner, selector.Body, queryItem);
+    public QueryContext<T> LeftJoin<T0>(QueryItem<T0> queryItem, Expression<Func<T, T0, bool>> selector) where T0: class => AddJoin(JoinType.Left, selector.Body, queryItem);
+    public QueryContext<T> LeftJoin<T0, T1>(QueryItem<T0> queryItem, Expression<Func<T0, T1, bool>> selector)  where T0: class => AddJoin(JoinType.Left, selector.Body, queryItem);
     #endregion
     #region Where
     private QueryContext<T> SetWere(Expression exp)
@@ -119,54 +119,54 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext, ISelectable, IOrdera
     #endregion
     #region  Select
 
-    private Task<List<TRead>> FinishSelect<TRead>(Expression expression, bool printToConsole = false) where TRead : class, new ()
+    private Task<List<TRead>> FinishSelect<TRead>(Expression expression, bool printToConsole = false) where TRead : class
     {
         SelectData = new Tuple<Expression, Type>(expression, typeof(TRead));
         return DbContext.QueryAsync<TRead>(this.Compile(printToConsole).CreateCommandWithConnection(this.DbContext.DbConnection));
     }
     
-    private Task<TRead?> FinishSelectOne<TRead>(Expression expression, bool printToConsole = false) where TRead : class, new ()
+    private Task<TRead?> FinishSelectOne<TRead>(Expression expression, bool printToConsole = false) where TRead : class
     {
         SelectData = new Tuple<Expression, Type>(expression, typeof(TRead));
         return DbContext.QuerySingleAsync<TRead>(this.Compile(printToConsole).CreateCommandWithConnection(this.DbContext.DbConnection));
     }
-
-    public Task<TRead?> SelectOneAsync<TRead, T0>(Expression<Func<T0, TRead>> selector, bool printToConsole = false) where TRead : class, new()
+    
+    public Task<TRead?> SelectOneAsync<T0, TRead>(Expression<Func<T0, TRead>> selector, bool printToConsole = false) where TRead : class
         => FinishSelectOne<TRead>(selector.Body, printToConsole);
     
-    public Task<TRead?> SelectOneAsync<TRead, T0, T1>(Expression<Func<T0, T1, TRead>> selector, bool printToConsole = false) where TRead : class, new()
+    public Task<TRead?> SelectOneAsync<T0, T1, TRead>(Expression<Func<T0, T1, TRead>> selector, bool printToConsole = false) where TRead : class
         => FinishSelectOne<TRead>(selector.Body, printToConsole);
-    public Task<TRead?> SelectOneAsync<TRead, T0, T1, T2>(Expression<Func<T0, T1, T2, TRead>> selector, bool printToConsole = false) where TRead : class, new()
+    public Task<TRead?> SelectOneAsync<T0, T1, T2, TRead>(Expression<Func<T0, T1, T2, TRead>> selector, bool printToConsole = false) where TRead : class
         => FinishSelectOne<TRead>(selector.Body, printToConsole);
-    public Task<TRead?> SelectOneAsync<TRead, T0, T1, T2, T3>(Expression<Func<T0, T1, T2, T3, TRead>> selector, bool printToConsole = false) where TRead : class, new()
+    public Task<TRead?> SelectOneAsync<T0, T1, T2, T3, TRead>(Expression<Func<T0, T1, T2, T3, TRead>> selector, bool printToConsole = false) where TRead : class
         => FinishSelectOne<TRead>(selector.Body, printToConsole);
-    public Task<TRead?> SelectOneAsync<TRead, T0, T1, T2, T3, T4>(Expression<Func<T0, T1, T2, T3, T4, TRead>> selector, bool printToConsole = false) where TRead : class, new()
+    public Task<TRead?> SelectOneAsync<T0, T1, T2, T3, T4, TRead>(Expression<Func<T0, T1, T2, T3, T4, TRead>> selector, bool printToConsole = false) where TRead : class
         => FinishSelectOne<TRead>(selector.Body, printToConsole);
-    public Task<TRead?> SelectOneAsync<TRead, T0, T1, T2, T3, T4, T5>(Expression<Func<T0, T1, T2, T3, T4, T5, TRead>> selector, bool printToConsole = false) where TRead : class, new()
+    public Task<TRead?> SelectOneAsync<T0, T1, T2, T3, T4, T5, TRead>(Expression<Func<T0, T1, T2, T3, T4, T5, TRead>> selector, bool printToConsole = false) where TRead : class
         => FinishSelectOne<TRead>(selector.Body, printToConsole);
-    public Task<TRead?> SelectOneAsync<TRead, T0, T1, T2, T3, T4, T5, T6>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, TRead>> selector, bool printToConsole = false) where TRead : class, new()
+    public Task<TRead?> SelectOneAsync<T0, T1, T2, T3, T4, T5, T6, TRead>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, TRead>> selector, bool printToConsole = false) where TRead : class
         => FinishSelectOne<TRead>(selector.Body, printToConsole);
-    public Task<TRead?> SelectOneAsync<TRead, T0, T1, T2, T3, T4, T5, T6, T7>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, TRead>> selector, bool printToConsole = false) where TRead : class, new()
+    public Task<TRead?> SelectOneAsync<T0, T1, T2, T3, T4, T5, T6, T7, TRead>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, TRead>> selector, bool printToConsole = false) where TRead : class
         => FinishSelectOne<TRead>(selector.Body, printToConsole);
-    public Task<TRead?> SelectOneAsync<TRead, T0, T1, T2, T3, T4, T5, T6, T7, T8>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRead>> selector, bool printToConsole = false) where TRead : class, new()
+    public Task<TRead?> SelectOneAsync<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRead>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRead>> selector, bool printToConsole = false) where TRead : class
         => FinishSelectOne<TRead>(selector.Body, printToConsole);
     //=====================================================================
-    public Task<List<TRead>> Select<TRead, T0>(Expression<Func<T0, TRead>> selector, bool printToConsole = false) where TRead : class, new()
+    public Task<List<TRead>> Select<T0, TRead>(Expression<Func<T0, TRead>> selector, bool printToConsole = false) where TRead : class
         => FinishSelect<TRead>(selector.Body, printToConsole);
     
-    public Task<List<TRead>> Select<TRead, T0, T1>(Expression<Func<T0, T1, TRead>> selector, bool printToConsole = false) where TRead : class, new()
+    public Task<List<TRead>> Select<T0, T1, TRead>(Expression<Func<T0, T1, TRead>> selector, bool printToConsole = false) where TRead : class
         => FinishSelect<TRead>(selector.Body, printToConsole);
-    public Task<List<TRead>> Select<TRead, T0, T1, T2>(Expression<Func<T0, T1, T2, TRead>> selector, bool printToConsole = false) where TRead : class, new()
+    public Task<List<TRead>> Select<T0, T1, T2, TRead>(Expression<Func<T0, T1, T2, TRead>> selector, bool printToConsole = false) where TRead : class
         => FinishSelect<TRead>(selector.Body, printToConsole);
-    public Task<List<TRead>> Select<TRead, T0, T1, T2, T3>(Expression<Func<T0, T1, T2, T3, TRead>> selector, bool printToConsole = false) where TRead : class, new()
+    public Task<List<TRead>> Select<T0, T1, T2, T3, TRead>(Expression<Func<T0, T1, T2, T3, TRead>> selector, bool printToConsole = false) where TRead : class
         => FinishSelect<TRead>(selector.Body, printToConsole);
-    public Task<List<TRead>> Select<TRead, T0, T1, T2, T3, T4>(Expression<Func<T0, T1, T2, T3, T4, TRead>> selector, bool printToConsole = false) where TRead : class, new()
+    public Task<List<TRead>> Select<T0, T1, T2, T3, T4, TRead>(Expression<Func<T0, T1, T2, T3, T4, TRead>> selector, bool printToConsole = false) where TRead : class
         => FinishSelect<TRead>(selector.Body, printToConsole);
-    public Task<List<TRead>> Select<TRead, T0, T1, T2, T3, T4, T5>(Expression<Func<T0, T1, T2, T3, T4, T5, TRead>> selector, bool printToConsole = false) where TRead : class, new()
+    public Task<List<TRead>> Select<T0, T1, T2, T3, T4, T5, TRead>(Expression<Func<T0, T1, T2, T3, T4, T5, TRead>> selector, bool printToConsole = false) where TRead : class
         => FinishSelect<TRead>(selector.Body, printToConsole);
-    public Task<List<TRead>> Select<TRead, T0, T1, T2, T3, T4, T5, T6, T7>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, TRead>> selector, bool printToConsole = false) where TRead : class, new()
+    public Task<List<TRead>> Select<T0, T1, T2, T3, T4, T5, T6, T7, TRead>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, TRead>> selector, bool printToConsole = false) where TRead : class
         => FinishSelect<TRead>(selector.Body, printToConsole);
-    public Task<List<TRead>> Select<TRead, T0, T1, T2, T3, T4, T5, T6, T7, T8>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRead>> selector, bool printToConsole = false) where TRead : class, new()
+    public Task<List<TRead>> Select<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRead>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRead>> selector, bool printToConsole = false) where TRead : class
         => FinishSelect<TRead>(selector.Body, printToConsole);
     public Task<bool> Exists(bool printToConsole = false)
     {
@@ -416,30 +416,46 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext, ISelectable, IOrdera
             throw new UskokDbException("SelectData is null, in other terms you queries but no select was provided");
         }
         var (expression, readType) = SelectData;
-        if (expression is not MemberInitExpression memberInitExpression)
-            throw new Exception($"Select is not MemberInitExpression, Type: {expression.GetType().FullName}");
-        
-        
-        StringBuilder builder = new StringBuilder();
-        var properties = TypeMetadata.GetMetadataProperties(readType);
-        int i = 0;
-        int pIndex = 0;
-        foreach (var propertyMetadata in properties)
+        if (expression is NewExpression newExpression)
         {
-            foreach (var binding in memberInitExpression.Bindings)
+            StringBuilder builder = new();
+            var count = newExpression.Members.Count;
+            var pIndex = 0;
+            for (var i = 0; i < count; i++)
             {
-                if(binding is not MemberAssignment memberAssignment)throw new Exception("Binding in Select not MemberAssignment");
-                
-                if(propertyMetadata.PropertyInfo.Name != memberAssignment.Member.Name)continue;
-
-                builder.Append(AppendExpression(memberAssignment.Expression, "@select_p_", paramList, ref pIndex, out _));
+                builder.Append(AppendExpression(newExpression.Arguments[i], "@select_p_", paramList, ref pIndex, out _));
+                builder.Append(" as ");
+                builder.Append(newExpression.Members[i].Name);
+                if (i + 1 < count)
+                    builder.Append(", ");
             }
+            return builder.ToString();
+        }
+        if (expression is MemberInitExpression memberInitExpression)
+        {
+            StringBuilder builder = new StringBuilder();
+            var properties = TypeMetadata.GetMetadataProperties(readType);
+            int i = 0;
+            int pIndex = 0;
+            foreach (var propertyMetadata in properties)
+            {
+                foreach (var binding in memberInitExpression.Bindings)
+                {
+                    if(binding is not MemberAssignment memberAssignment)throw new Exception("Binding in Select not MemberAssignment");
+                
+                    if(propertyMetadata.PropertyInfo.Name != memberAssignment.Member.Name)continue;
+
+                    builder.Append(AppendExpression(memberAssignment.Expression, "@select_p_", paramList, ref pIndex, out _));
+                }
             
-            i++;
-            if (properties.Count != i) builder.Append(", ");
+                i++;
+                if (properties.Count != i) builder.Append(", ");
+            }
+        
+            return builder.ToString();
         }
         
-        return builder.ToString();
+        throw new UskokDbException($"Select is not MemberInitExpression, Type: {expression.GetType().FullName}");
     }
 
     private string CompileUpdate(List<DbParam> paramList)

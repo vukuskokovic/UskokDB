@@ -3,7 +3,7 @@ using System.Linq.Expressions;
 
 namespace UskokDB.Query;
 
-public interface IQueryable<T> where T : class, new()
+public interface IQueryable<T> where T : class
 {
     public QueryContext<T> Where(Expression<Func<T, bool>> selector);
     public QueryContext<T> Where<T0>(Expression<Func<T0, bool>> selector);

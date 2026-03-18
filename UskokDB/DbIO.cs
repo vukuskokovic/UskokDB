@@ -176,9 +176,22 @@ public static class DbIO
         });
     }
     
-    internal static T Read<T>(DbDataReader reader) where T : class, new()
+    internal static T Read<T>(DbDataReader reader) where T : class
     {
-        T valueToBePopulated = new();
+        if (TypeMetadata<T>.IsAnonymous)
+        {
+            object?[] arr = new object[TypeMetadata<T>.Properties.Count];
+            for (int i = 0; i < arr.Length; i++)
+            {
+                var value = ReadValue(reader.IsDBNull(i) ? null : reader.GetValue(i), TypeMetadata<T>.Properties[i]);
+                arr[i] = value;
+            }
+            
+            
+            return TypeMetadata<T>.AnonymousCreate(arr);
+        }
+        
+        var valueToBePopulated = TypeMetadata<T>.Create();
 
         if (valueToBePopulated is IDbManualReader fastReader)
         {
