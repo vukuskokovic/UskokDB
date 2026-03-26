@@ -11,9 +11,9 @@
 		<PackageTags>db, database, orm, mysql</PackageTags>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<Authors>Vuk Uskokovic</Authors>
-		<Version>5.4.0</Version>
+		<Version>5.4.1</Version>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<PackageReleaseNotes>Support for anonymous types in select</PackageReleaseNotes>
+		<PackageReleaseNotes>Hotfix for updating/where with the same type getting translted to table columns instead of values.</PackageReleaseNotes>
 		<Description>A c# orm made for simple and fast usage.
 Supports linq to sql, table mapping and creation, generic type reading and much more.</Description>
 		<TargetFrameworks>net8.0;net9.0;netstandard2.0</TargetFrameworks>

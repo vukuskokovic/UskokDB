@@ -617,88 +617,44 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext, ISelectable, IOrdera
         }
         if (expression is MemberExpression memberExpression)
         {
-            var holdingType = memberExpression.Expression?.Type ?? memberExpression.Member.DeclaringType;
-            if (holdingType == null)
+            var queryable = GetQueryableInQuery(memberExpression.Expression?.Type ?? memberExpression.Member.DeclaringType!);
+            
+            bool isSqlParameter = false;
+            Expression? current = memberExpression.Expression;
+            while (current is MemberExpression next) current = next.Expression;
+            if (current is ParameterExpression) isSqlParameter = true;
+
+            if (queryable != null && isSqlParameter)
             {
-                throw new UskokDbException("Member expression doesn't have a declaring type");
+                var propertyMetadata = queryable.GetMetadataPropertyFromName(memberExpression.Member.Name);
+                outputType = propertyMetadata.Type;
+                return $"{queryable.GetName()}.{propertyMetadata.PropertyName}";
             }
             
-            var queryable = GetQueryableInQuery(holdingType);
-
-            if (queryable == null)
+            if (UskokDb.MemberTranslators.TryGetValue(memberExpression.Member, out var memberTranslator))
             {
-                if (UskokDb.MemberTranslators.TryGetValue(memberExpression.Member, out var memberTranslator))
-                {
-                    return memberTranslator.Translate(this, memberExpression, namePrefix, dbParams, ref propertyIndex,
-                        out outputType);
-                }
-                var value = Expression
-                    .Lambda(
-                        Expression.Convert(memberExpression, typeof(object))
-                    )
-                    .Compile()
-                    .DynamicInvoke();
-                
-                if (value == null)
-                {
-                    return NullVale;
-                }
-                outputType = value.GetType();
-                if (value is IEnumerable enumerable and not string)
-                {
-                    StringBuilder builder = new StringBuilder("(");
-                    bool anyFound = false;
-                    foreach (var enumerableItem in enumerable)
-                    {
-                        var paramName = AddParam(dbParams,  enumerableItem, namePrefix, ref propertyIndex);
-                        builder.Append(paramName);
-                        builder.Append(", ");
-                        anyFound = true;
-                    }
-
-                    builder.Length -= 2;
-                    builder.Append(")");
-
-                    if (!anyFound) 
-                        return null!;
-                    
-                    return builder.ToString();
-                }
-                return AddParam(dbParams, value, namePrefix, ref propertyIndex);
+                return memberTranslator.Translate(this, memberExpression, namePrefix, dbParams, ref propertyIndex, out outputType);
             }
-
-
-            var propertyMetadata = queryable.GetMetadataPropertyFromName(memberExpression.Member.Name);
-            outputType = propertyMetadata.Type;
-            return $"{queryable.GetName()}.{propertyMetadata.PropertyName}";
+            
+            var value = Expression.Lambda(Expression.Convert(memberExpression, typeof(object))).Compile().DynamicInvoke();
+    
+            if (value == null) return NullVale;
+    
+            outputType = value.GetType();
+            return AddParam(dbParams, value, namePrefix, ref propertyIndex);
         }
-
         if (expression is ParameterExpression parameterExpression)
         {
-            if (parameterExpression.Type.IsGenericType &&
-                parameterExpression.Type.GetGenericTypeDefinition() == typeof(Many<>))
-            {
-                var typeProperties =
-                    TypeMetadata.GetMetadataProperties(parameterExpression.Type.GenericTypeArguments[0]);
+            var typeProperties =
+                TypeMetadata.GetMetadataProperties(parameterExpression.Type);
 
-                var x = typeProperties.Select(x => x.PropertyName);
-                return string.Join(", ", x);
-            }
-
-            else
-            {
-                var typeProperties =
-                    TypeMetadata.GetMetadataProperties(parameterExpression.Type);
-
-                var queryable = GetQueryableInQuery(parameterExpression.Type);
-                if (queryable == null)
-                    throw new UskokDbException($"Queryable not found in query, type: {parameterExpression.Type.Name}");
+            var queryable = GetQueryableInQuery(parameterExpression.Type);
+            if (queryable == null)
+                throw new UskokDbException($"Queryable not found in query, type: {parameterExpression.Type.Name}");
                 
-                var x = typeProperties.Select(x => $"{queryable.GetName()}.{x.PropertyName}");
-                return string.Join(", ", x);
-            }
+            var x = typeProperties.Select(x => $"{queryable.GetName()}.{x.PropertyName}");
+            return string.Join(", ", x);
         }
-
         if (expression is MethodCallExpression methodCallExpression)
         {
             var method = methodCallExpression.Method;
