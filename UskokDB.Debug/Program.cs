@@ -9,12 +9,10 @@ UskokDb.InitLinqMethodRegistry();
 await using var dbContext = new ShopDbContext();
 //await dbContext.InitDb();
 
-User u = new User
+var count = await dbContext.QuerySingleAsync<Query>("SELECT COUNT(*) from users");
+Console.WriteLine(count?.Count);
+
+class Query
 {
-    Birthday = DateTime.MaxValue,
-    Email = "email",
-    JoinedAt = DateTime.MaxValue,
-    Name = "name",
-    UserId = Guid.NewGuid(),
-    Username = "username"
-};
+    public short Count { get; set; }
+}

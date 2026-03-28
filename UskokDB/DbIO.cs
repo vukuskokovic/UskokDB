@@ -234,6 +234,25 @@ public static class DbIO
         }
         if (PrimitiveTypes.Contains(type))
         {
+            var valueType = value.GetType();
+            if (valueType != type)
+            {
+                return Type.GetTypeCode(type) switch
+                {
+                    TypeCode.Int32 => Convert.ToInt32(value),
+                    TypeCode.Int64 => Convert.ToInt64(value),
+                    TypeCode.UInt16 => Convert.ToUInt16(value),
+                    TypeCode.UInt32 => Convert.ToUInt32(value),
+                    TypeCode.UInt64 => Convert.ToUInt64(value),
+                    TypeCode.Double => Convert.ToDouble(value),
+                    TypeCode.Decimal => Convert.ToDecimal(value),
+                    TypeCode.Single => Convert.ToSingle(value),
+                    TypeCode.Int16 => Convert.ToInt16(value),
+                    TypeCode.Byte => Convert.ToByte(value),
+                    _ => throw new UskokDbException(
+                        $"Type mismatch, Desired type: {type.Name} found type {valueType.Name}")
+                };
+            }
             return value;
         }
         if (DbIOOptions.ParameterConverters.TryGetValue(type, out var parameterConverter))
