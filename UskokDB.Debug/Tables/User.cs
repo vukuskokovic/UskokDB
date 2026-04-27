@@ -15,6 +15,8 @@ public class User
     
     public string? Email { get; set; }
     
+    public Post? Post { get; set; }
+    
     public DateTime Birthday { get; set; }
     public DateTime JoinedAt { get; set; }
 }

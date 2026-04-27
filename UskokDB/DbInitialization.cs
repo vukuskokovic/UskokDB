@@ -421,6 +421,7 @@ internal static class DbInitialization
 
         if (DbIO.ShouldJsonBeUsedForType(type))
         {
+            addNotNull = false;
             builder.Append("JSON");
             return;
         }
