@@ -8,8 +8,8 @@ using UskokDB.Query.QueryFunctions;
 UskokDb.SetSqlDialect(SqlDialect.MySql);
 UskokDb.InitLinqMethodRegistry();
 await using var dbContext = new ShopDbContext();
-Console.WriteLine(dbContext.GetTableCreationString());
-class Query
-{
-    public short Count { get; set; }
-}
+await dbContext.InitDb();
+
+var list = await dbContext.NullableTest.QueryAllAsync();
+
+Console.WriteLine(JsonSerializer.Serialize(list));

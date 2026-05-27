@@ -171,6 +171,7 @@ public class TypeMetadataProperty
 {
     public PropertyInfo PropertyInfo { get; }
     public Type Type { get; }
+    internal Type DbIoType { get; }
     public string PropertyName { get; }
     public bool IsKey { get; }
     public Func<object, object?> GetMethod { get; set; } = null!;
@@ -182,6 +183,7 @@ public class TypeMetadataProperty
     {
         PropertyInfo = propertyInfo;
         Type = propertyInfo.PropertyType;
+        DbIoType = Nullable.GetUnderlyingType(Type) ?? Type;
         if (propertyInfo.GetCustomAttribute<ColumnAttribute>() is {} columnAttribute)
         {
             PropertyName = columnAttribute.Name;

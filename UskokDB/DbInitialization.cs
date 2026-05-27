@@ -100,6 +100,14 @@ internal static class DbInitialization
             { SqlDialect.PostgreSql, "TIMESTAMP" },
             { SqlDialect.SqLite, "TEXT" }
         },
+        #if !NETSTANDARD2_0
+        [typeof(DateOnly)] = new Dictionary<SqlDialect, string>
+        {
+            { SqlDialect.MySql, "DATE" },
+            { SqlDialect.PostgreSql, "DATE" },
+            { SqlDialect.SqLite, "TEXT" }
+        },
+        #endif
         [typeof(Guid)] = new Dictionary<SqlDialect, string>
         {
             { SqlDialect.MySql, "VARCHAR(36)" },

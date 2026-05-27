@@ -59,6 +59,10 @@ public static class DbIO
         typeof(decimal?),
         typeof(DateTime),
         typeof(DateTime?),
+        #if !NETSTANDARD2_0
+        typeof(DateOnly),
+        typeof(DateOnly?),
+        #endif
         typeof(Guid),
         typeof(Guid?),
         typeof(TimeSpan),
@@ -227,7 +231,7 @@ public static class DbIO
             return char.Parse((string)value);
         }
 
-        var type = property.Type;
+        var type = property.DbIoType;
         if (type == typeof(bool) && value is int i)
         {
             return i != 0;
@@ -235,6 +239,17 @@ public static class DbIO
         if (PrimitiveTypes.Contains(type))
         {
             var valueType = value.GetType();
+            
+            #if !NETSTANDARD2_0
+            if (type == typeof(DateOnly))
+            {
+                if (value is DateTime dt) return DateOnly.FromDateTime(dt);
+                if (value is DateOnly dtOnly) return dtOnly;
+
+                throw new UskokDbException("Could not ready DateOnly value is not DateTime nor DateOnly");
+            }
+            #endif
+            
             if (valueType != type)
             {
                 return Type.GetTypeCode(type) switch
