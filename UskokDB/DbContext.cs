@@ -81,11 +81,11 @@ public abstract class DbContext : IDisposable
     
     
     #endif
-    public Task<List<T>> QueryAsync<T>(string commandString, object? properties = null, CancellationToken cancellationToken = default) where T : class
+    public Task<List<T>> QueryAsync<T>(string commandString, object? properties = null, CancellationToken cancellationToken = default)
         => QueryAsync<T>(CreateCommandFromParams(commandString, properties), cancellationToken);
     
 
-    public async Task<List<T>> QueryAsync<T>(DbCommand command, CancellationToken cancellationToken = default) where T : class
+    public async Task<List<T>> QueryAsync<T>(DbCommand command, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -115,12 +115,12 @@ public abstract class DbContext : IDisposable
     
     
     
-    public Task<T?> QuerySingleAsync<T>(string commandString, object? properties = null, CancellationToken cancellationToken = default) where T : class
+    public Task<T?> QuerySingleAsync<T>(string commandString, object? properties = null, CancellationToken cancellationToken = default)
         => QuerySingleAsync<T>(CreateCommandFromParams(commandString, properties), cancellationToken);
     
 
     public async Task<T?> QuerySingleAsync<T>(DbCommand command,
-        CancellationToken cancellationToken = default) where T : class
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -129,7 +129,7 @@ public abstract class DbContext : IDisposable
             await
 #endif
                 using var reader = await command.ExecuteReaderAsync(cancellationToken);
-            if (!reader.HasRows || !await reader.ReadAsync(cancellationToken)) return null;
+            if (!reader.HasRows || !await reader.ReadAsync(cancellationToken)) return default;
 
             return DbIO.Read<T>(reader);
         }

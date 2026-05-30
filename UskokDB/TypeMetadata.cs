@@ -10,7 +10,7 @@ using UskokDB.Attributes;
 namespace UskokDB;
 
 [SuppressMessage("ReSharper", "StaticMemberInGenericType")]
-public static class TypeMetadata<T> where T : class
+public static class TypeMetadata<T>
 {
     public static List<TypeMetadataProperty> Properties { get; } = [];
     public static List<TypeMetadataProperty> Keys { get; } = [];

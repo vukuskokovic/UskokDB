@@ -180,14 +180,19 @@ public static class DbIO
         });
     }
     
-    internal static T Read<T>(DbDataReader reader) where T : class
+    internal static T Read<T>(DbDataReader reader)
     {
+        if (PrimitiveTypes.Contains(typeof(T)))
+        {
+            return (T)ReadValue(reader.IsDBNull(0) ? null : reader.GetValue(0), null, typeof(T))!;
+        }
+        
         if (TypeMetadata<T>.IsAnonymous)
         {
             object?[] arr = new object[TypeMetadata<T>.Properties.Count];
             for (int i = 0; i < arr.Length; i++)
             {
-                var value = ReadValue(reader.IsDBNull(i) ? null : reader.GetValue(i), TypeMetadata<T>.Properties[i]);
+                var value = ReadValue(reader.IsDBNull(i) ? null : reader.GetValue(i), TypeMetadata<T>.Properties[i], null);
                 arr[i] = value;
             }
             
@@ -214,34 +219,38 @@ public static class DbIO
         return valueToBePopulated;
     }
 
-    private static object? ReadValue(object? value, TypeMetadataProperty property)
+    private static object? ReadValue(object? value, TypeMetadataProperty? property, Type? typeToRead)
     {
         if (value is null or DBNull)
         {
             return null;
         }
 
-        if (property.IsGuidOrNullableGuid)
+        var readType = property?.DbIoType ??
+                       typeToRead ?? throw new UskokDbException("Type to read could be determined");
+
+        readType = Nullable.GetUnderlyingType(readType) ?? readType;
+
+        if (property?.IsGuidOrNullableGuid ?? readType == typeof(Guid))
         {
             return Guid.Parse((string)value);
         }
 
-        if (property.IsCharOrNullableChar)
+        if (property?.IsCharOrNullableChar ?? readType == typeof(char))
         {
             return char.Parse((string)value);
         }
-
-        var type = property.DbIoType;
-        if (type == typeof(bool) && value is int i)
+        
+        if (readType == typeof(bool) && value is int i)
         {
             return i != 0;
         }
-        if (PrimitiveTypes.Contains(type))
+        if (PrimitiveTypes.Contains(readType))
         {
             var valueType = value.GetType();
             
             #if !NETSTANDARD2_0
-            if (type == typeof(DateOnly))
+            if (readType == typeof(DateOnly))
             {
                 if (value is DateTime dt) return DateOnly.FromDateTime(dt);
                 if (value is DateOnly dtOnly) return dtOnly;
@@ -250,9 +259,9 @@ public static class DbIO
             }
             #endif
             
-            if (valueType != type)
+            if (valueType != readType)
             {
-                return Type.GetTypeCode(type) switch
+                return Type.GetTypeCode(readType) switch
                 {
                     TypeCode.Int32 => Convert.ToInt32(value),
                     TypeCode.Int64 => Convert.ToInt64(value),
@@ -265,37 +274,38 @@ public static class DbIO
                     TypeCode.Int16 => Convert.ToInt16(value),
                     TypeCode.Byte => Convert.ToByte(value),
                     _ => throw new UskokDbException(
-                        $"Type mismatch, Desired type: {type.Name} found type {valueType.Name}")
+                        $"Type mismatch, Desired type: {readType.Name} found type {valueType.Name}")
                 };
             }
             return value;
         }
-        if (DbIOOptions.ParameterConverters.TryGetValue(type, out var parameterConverter))
+        if (DbIOOptions.ParameterConverters.TryGetValue(readType, out var parameterConverter))
         {
             
             return parameterConverter.Read(value);
         }
 
-        if (type.IsEnum || !ShouldJsonBeUsedForType(type))
+        if (readType.IsEnum || !ShouldJsonBeUsedForType(readType))
         {
             return value;
         }
+       
         if (DbIOOptions.JsonReader == null) throw new UskokDbIoException("Configured to use json for unknown types and structs but json reader was null");
         if (value is not string jsonStr)
-            throw new UskokDbIoException($"Error reading type {type.FullName} did not get json string from the database");
+            throw new UskokDbIoException($"Error reading type {readType.FullName} did not get json string from the database");
 
-        return DbIOOptions.JsonReader(jsonStr, type);
+        return DbIOOptions.JsonReader(jsonStr, readType);
     }
     
     private static void ReadValue(object? value, TypeMetadataProperty property, object objectHolder)
     {
-        var readValue = ReadValue(value, property);
+        var readValue = ReadValue(value, property, null);
         property.SetterMethod(objectHolder, readValue);
     }
 
     private static void ReadValue<T>(object? value, TypeMetadataProperty property, T objectHolder) where T : class
     {
-        var readValue = ReadValue(value, property);
+        var readValue = ReadValue(value, property, null);
         property.SetterMethod(objectHolder, readValue);
     }
 }
