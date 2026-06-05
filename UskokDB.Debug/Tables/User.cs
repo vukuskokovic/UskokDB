@@ -13,6 +13,8 @@ public class User
     [Unique, ColumnNotNull, MaxLength(12)]
     public string Username { get; set; } = null!;
     
+    public bool Xd { get; set; }
+    
     public string? Email { get; set; }
     
     public Post? Post { get; set; }

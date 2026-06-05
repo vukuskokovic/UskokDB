@@ -9,6 +9,6 @@ UskokDb.InitLinqMethodRegistry();
 await using var dbContext = new ShopDbContext();
 await dbContext.InitDb();
 
-var res = await dbContext.Users.Select((User u) => u.Name, true);
+var res = await dbContext.Users.Where(x => x.Email == "312").SelectOneAsync<User, bool?>((u) => u.Xd, true);
 
 Console.WriteLine(JsonSerializer.Serialize(res));

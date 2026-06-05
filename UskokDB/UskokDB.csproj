@@ -11,12 +11,12 @@
 		<PackageTags>db, database, orm, mysql</PackageTags>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<Authors>Vuk Uskokovic</Authors>
-		<Version>5.4.6</Version>
+		<Version>5.4.7</Version>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<PackageReleaseNotes>Implemented primitive type selecting, so that only one column can be select in a select to avoid using an object for just one property</PackageReleaseNotes>
+		<PackageReleaseNotes>Added net10.0 support</PackageReleaseNotes>
 		<Description>A c# orm made for simple and fast usage.
 Supports linq to sql, table mapping and creation, generic type reading and much more.</Description>
-		<TargetFrameworks>net8.0;net9.0;netstandard2.0</TargetFrameworks>
+		<TargetFrameworks>net8.0;net9.0;net10.0;netstandard2.0</TargetFrameworks>
 	</PropertyGroup>
 	<ItemGroup>
 		<None Include="..\README.md">
