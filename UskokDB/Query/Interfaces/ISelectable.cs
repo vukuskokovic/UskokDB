@@ -58,6 +58,10 @@ public interface ISelectable
         Expression<Func<T0, T1, T2, T3, T4, T5, TRead>> selector, bool printToConsole = false)
         ;
 
+    public Task<List<TRead>> Select<T0, T1, T2, T3, T4, T5, T6, TRead>(
+            Expression<Func<T0, T1, T2, T3, T4, T5, T6, TRead>> selector, bool printToConsole = false)
+        ;
+    
     public Task<List<TRead>> Select<T0, T1, T2, T3, T4, T5, T6, T7, TRead>(
         Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, TRead>> selector, bool printToConsole = false)
         ;

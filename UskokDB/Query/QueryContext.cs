@@ -164,6 +164,8 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext, ISelectable, IOrdera
         => FinishSelect<TRead>(selector.Body, printToConsole);
     public Task<List<TRead>> Select<T0, T1, T2, T3, T4, T5, TRead>(Expression<Func<T0, T1, T2, T3, T4, T5, TRead>> selector, bool printToConsole = false) 
         => FinishSelect<TRead>(selector.Body, printToConsole);
+    public Task<List<TRead>> Select<T0, T1, T2, T3, T4, T5, T6, TRead>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, TRead>> selector, bool printToConsole = false) 
+        => FinishSelect<TRead>(selector.Body, printToConsole);
     public Task<List<TRead>> Select<T0, T1, T2, T3, T4, T5, T6, T7, TRead>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, TRead>> selector, bool printToConsole = false) 
         => FinishSelect<TRead>(selector.Body, printToConsole);
     public Task<List<TRead>> Select<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRead>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRead>> selector, bool printToConsole = false) 
