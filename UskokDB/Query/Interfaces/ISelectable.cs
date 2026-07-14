@@ -65,10 +65,23 @@ public interface ISelectable
     public Task<List<TRead>> Select<T0, T1, T2, T3, T4, T5, T6, T7, TRead>(
         Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, TRead>> selector, bool printToConsole = false)
         ;
-
+    
     public Task<List<TRead>> Select<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRead>(
-        Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRead>> selector, bool printToConsole = false)
+            Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRead>> selector, bool printToConsole = false)
         ;
+
+    public Task<List<TRead>> Select<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, TRead>(
+        Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, TRead>> selector, bool printToConsole = false);
+    
+    public Task<List<TRead>> Select<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TRead>(
+        Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TRead>> selector, bool printToConsole = false);
+    
+    public Task<List<TRead>> Select<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, TRead>(
+        Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, TRead>> selector, bool printToConsole = false);
+    
+    public Task<List<TRead>> Select<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, TRead>(
+        Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, TRead>> selector, bool printToConsole = false);
+    
 
     public Task<bool> Exists(bool printToConsole = false);
     public Task<int> Count(bool printToConsole = false);

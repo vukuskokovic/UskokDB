@@ -126,6 +126,14 @@ public abstract class QueryItem<T>(DbContext dbContext) : IQueryItem, IJoinable<
 
     public Task<List<TRead>> Select<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRead>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRead>> selector, bool printToConsole = false)  =>
         new QueryContext<T>(this, dbContext).Select(selector, printToConsole);
+    public Task<List<TRead>> Select<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, TRead>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, TRead>> selector, bool printToConsole = false)  =>
+        new QueryContext<T>(this, dbContext).Select(selector, printToConsole);
+    public Task<List<TRead>> Select<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TRead>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TRead>> selector, bool printToConsole = false)  =>
+        new QueryContext<T>(this, dbContext).Select(selector, printToConsole);
+    public Task<List<TRead>> Select<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, TRead>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, TRead>> selector, bool printToConsole = false)  =>
+        new QueryContext<T>(this, dbContext).Select(selector, printToConsole);
+    public Task<List<TRead>> Select<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, TRead>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, TRead>> selector, bool printToConsole = false)  =>
+        new QueryContext<T>(this, dbContext).Select(selector, printToConsole);
 
     public Task<bool> Exists(bool printToConsole = false)
         => new QueryContext<T>(this, dbContext).Exists(printToConsole);

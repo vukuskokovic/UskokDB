@@ -77,6 +77,12 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext, ISelectable, IOrdera
     public QueryContext<T> Where<T0, T1, T2, T3, T4, T5, T6>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, bool>> selector) => SetWere(selector.Body);
     public QueryContext<T> Where<T0, T1, T2, T3, T4, T5, T6, T7>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, bool>> selector) => SetWere(selector.Body);
     public QueryContext<T> Where<T0, T1, T2, T3, T4, T5, T6, T7, T8>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, bool>> selector) => SetWere(selector.Body);
+    public QueryContext<T> Where<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, bool>> selector) => SetWere(selector.Body);
+    public QueryContext<T> Where<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, bool>> selector) => SetWere(selector.Body);
+    public QueryContext<T> Where<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, bool>> selector) => SetWere(selector.Body);
+    public QueryContext<T> Where<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, bool>> selector) => SetWere(selector.Body);
+    public QueryContext<T> Where<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, bool>> selector) => SetWere(selector.Body);
+    public QueryContext<T> Where<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, bool>> selector) => SetWere(selector.Body);
     #endregion
     #region OrderBy/GroupBy
 
@@ -169,6 +175,15 @@ public class QueryContext<T> : IJoinable<T>, IQueryContext, ISelectable, IOrdera
     public Task<List<TRead>> Select<T0, T1, T2, T3, T4, T5, T6, T7, TRead>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, TRead>> selector, bool printToConsole = false) 
         => FinishSelect<TRead>(selector.Body, printToConsole);
     public Task<List<TRead>> Select<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRead>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRead>> selector, bool printToConsole = false) 
+        => FinishSelect<TRead>(selector.Body, printToConsole);
+    public Task<List<TRead>> Select<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, TRead>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, TRead>> selector, bool printToConsole = false) 
+        => FinishSelect<TRead>(selector.Body, printToConsole);
+    
+    public Task<List<TRead>> Select<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TRead>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TRead>> selector, bool printToConsole = false) 
+        => FinishSelect<TRead>(selector.Body, printToConsole);
+    public Task<List<TRead>> Select<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, TRead>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, TRead>> selector, bool printToConsole = false) 
+        => FinishSelect<TRead>(selector.Body, printToConsole);
+    public Task<List<TRead>> Select<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, TRead>(Expression<Func<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, TRead>> selector, bool printToConsole = false) 
         => FinishSelect<TRead>(selector.Body, printToConsole);
     public Task<bool> Exists(bool printToConsole = false)
     {
